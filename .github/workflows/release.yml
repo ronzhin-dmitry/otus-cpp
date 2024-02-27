@@ -20,6 +20,7 @@ jobs:
       - run: cmake --build . --target package
       - name: Create Release
         id: create_release
+        permissions: write-all
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
