@@ -3,6 +3,7 @@
 
 //added comment
 //one more comment
+//one more comment
 int version() {
 	return PROJECT_VERSION_PATCH;
 }
