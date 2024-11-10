@@ -1,2 +1,17 @@
 /build/*
 .vscode*
+/_CPack_Packages*
+/CMakeFiles*
+CPack*
+*.xz
+*.bz2
+*.gz
+CMakeCache*
+Testing*
+version.h
+test_version
+*.a
+*.Z
+*.cmake
+ip_filter
+Makefile
