@@ -84,8 +84,6 @@ set(CPACK_PACKAGE_VERSION_PATCH "${PROJECT_VERSION_PATCH}")
 set(CPACK_PACKAGE_CONTACT example@example.com)
 include(CPack)
 
-include(CPack)
-
 if(WITH_BOOST_TEST)
     enable_testing()
     add_test(test_version test_version)
