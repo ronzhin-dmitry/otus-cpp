@@ -3,6 +3,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <array>
 #include "lib.h"
 #include <tuple>
 #include <algorithm>
@@ -39,26 +40,43 @@ int main()
     //test commit
     try
     {
-        std::vector<std::vector<std::string> > ip_pool;
+        std::vector<std::array<int, 4>> ip_pool;
 
         for(std::string line; std::getline(std::cin, line);)
         {
             std::vector<std::string> v = split(line, '\t');
-            ip_pool.push_back(split(v.at(0), '.'));
+            std::vector<std::string> v1 = split(v.at(0), '.');
+            try{
+            ip_pool.push_back({std::stoi(v1[0]), std::stoi(v1[1]), std::stoi(v1[2]), std::stoi(v1[3])});
+            }
+            // Standard exceptions for stoi
+            catch (const std::invalid_argument & e) {
+                std::cout << e.what() << "\n";
+                std::cout << "Invalid input line: " << line << std::endl;
+            }
+            catch (const std::out_of_range & e) {
+                std::cout << e.what() << "\n";
+                std::cout << "Invalid input line: " << line << std::endl;
+            }
         }
+        /*
         auto rev_lex = [](std::vector<std::string>& a, std::vector<std::string>& b) { 
                  std::tuple<int, int, int, int> tuple1(std::stoi(a[0]), std::stoi(a[1]), std::stoi(a[2]),std::stoi(a[3]));
                  std::tuple<int, int, int, int> tuple2(std::stoi(b[0]), std::stoi(b[1]), std::stoi(b[2]),std::stoi(b[3]));
                  return tuple1 >= tuple2;
+            };*/
+
+        auto rev_lex = [](std::array<int, 4>& a, std::array<int, 4>& b) { 
+                 return a >= b;
             };
         //rev lex via sort
         std::sort(ip_pool.begin(), ip_pool.end(), rev_lex);
 
-        for(std::vector<std::vector<std::string> >::const_iterator ip = ip_pool.cbegin(); ip != ip_pool.cend(); ++ip)
+        for(auto ip = ip_pool.cbegin(); ip != ip_pool.cend(); ++ip)
         {
-            for(std::vector<std::string>::const_iterator ip_part = ip->cbegin(); ip_part != ip->cend(); ++ip_part)
+            for(auto ip_part = ip->cbegin(); ip_part != ip->cend(); ++ip_part)
             {
-                if (ip_part != ip->cbegin())
+                if (ip_part != ip->begin())
                 {
                     std::cout << ".";
 
@@ -77,8 +95,8 @@ int main()
         // 1.1.234.8
 
         // filter by first byte and output
-        auto filter_first = [](const std::vector<std::string>& a) {
-            if(std::stoi(a[0]) == 1)
+        auto filter_first = [](const std::array<int, 4>& a) {
+            if(a[0] == 1)
             {
                 std::cout << a[0] << "." << a[1] << "." << a[2] << "." << a[3] << std::endl;
             }
@@ -93,8 +111,8 @@ int main()
         // 1.1.234.8
 
         //  filter by first and second bytes and output
-        auto filter_first_second = [](const std::vector<std::string>& a) {
-            if(std::stoi(a[0]) == 46 && std::stoi(a[1]) == 70)
+        auto filter_first_second = [](const std::array<int, 4>& a) {
+            if(a[0] == 46 && a[1] == 70)
             {
                 std::cout << a[0] << "." << a[1] << "." << a[2] << "." << a[3] << std::endl;
             }
@@ -108,8 +126,8 @@ int main()
         // 46.70.29.76
 
         // filter by any byte and output
-        auto filter_any = [](const std::vector<std::string>& a) {
-            if(std::stoi(a[0]) == 46 || std::stoi(a[1]) == 46 || std::stoi(a[2]) == 46 || std::stoi(a[3]) == 46)
+        auto filter_any = [](const std::array<int, 4>& a) {
+            if(a[0] == 46 || a[1] == 46 || a[2] == 46 || a[3] == 46)
             {
                 std::cout << a[0] << "." << a[1] << "." << a[2] << "." << a[3] << std::endl;
             }
