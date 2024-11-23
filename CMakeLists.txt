@@ -12,12 +12,16 @@ configure_file(version.h.in version.h)
 add_executable(ip_filter ip_filter.cpp)
 
 target_include_directories(ip_filter
-    PRIVATE "${CMAKE_BINARY_DIR}"
+    PRIVATE "${CMAKE_BINARY_DIR}" "${CMAKE_SOURCE_DIR}"
 )
 
-add_library(ip_filter_lib lib.cpp)
+add_library(ip_filter_lib lib.cpp lib.h)
 target_include_directories(ip_filter_lib
-    PRIVATE "${CMAKE_BINARY_DIR}"
+    PRIVATE "${CMAKE_BINARY_DIR}" "${CMAKE_SOURCE_DIR}"
+)
+
+target_link_libraries(ip_filter PUBLIC
+    ip_filter_lib
 )
 
 set_target_properties(ip_filter ip_filter_lib PROPERTIES
@@ -70,10 +74,6 @@ else ()
         )
     endif()
 endif()
-
-target_link_libraries(ip_filter PRIVATE
-    ip_filter_lib
-)
 
 install(TARGETS ip_filter RUNTIME DESTINATION bin)
 

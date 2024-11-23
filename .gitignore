@@ -18,3 +18,4 @@ Makefile
 *.deb
 install_manifest.txt
 *.tsv
+*.zip
