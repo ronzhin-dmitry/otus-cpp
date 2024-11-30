@@ -13,7 +13,7 @@ test_version
 *.a
 *.Z
 *.cmake
-ip_filter
+allocator
 Makefile
 *.deb
 install_manifest.txt
