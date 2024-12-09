@@ -4,19 +4,14 @@ int main()
 {
     try
     {
-        std::vector<std::array<int, 4>> ip_pool;
-        ip_pool.reserve(100);
-        
-        ip_fill(ip_pool);
-
-        ip_sort(ip_pool);
-        ip_print_all(ip_pool);
- 
-        ip_print_all(ip_filter_all(ip_pool, 1));
-
-        ip_print_all(ip_filter_all(ip_pool,46,70));
-
-        ip_print_all(ip_filter_any(ip_pool,46));
+        print_ip( int8_t{-1} ); // 255
+        print_ip( int16_t{0} ); // 0.0
+        print_ip( int32_t{2130706433} ); // 127.0.0.1
+        print_ip( int64_t{8875824491850138409} );// 123.45.67.89.101.112.131.41
+        print_ip( std::string{"Hello, World!"} ); // Hello, World!
+        print_ip( std::vector<int>{100, 200, 300, 400} ); // 100.200.300.400
+        print_ip( std::list<short>{400, 300, 200, 100} ); // 400.300.200.100
+        //tuples not working yet - did not get how to do it
 
     }
     catch (const std::exception &e)
