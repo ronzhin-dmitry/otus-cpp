@@ -24,6 +24,25 @@ int main()
             std::cout << "m_custom[" << i << "] = " << m_custom[i] << std::endl;
     }
 
+
+    std::cout << "--------------------------------------------" << std::endl;
+    std::cout << "Custom container + std allocator" << std::endl;
+
+    //Custom container with std allocator
+    {
+        auto v_custom = MyVec<int>{};
+        v_custom.reserve(10);
+        //Custom allocator for std::map - max size 10
+        for(int i = 0 ; i < 10; i++)
+        {
+            v_custom.push_back(iter_factorial(i));
+        }
+        std::cout << "custom container with custom allocator elements:" << std::endl;
+        for(auto i = v_custom.begin() ; i != v_custom.end(); i++)
+            std::cout << (*i) << std::endl;
+        
+    }
+
     std::cout << "--------------------------------------------" << std::endl;
     std::cout << "Custom container + custom allocator" << std::endl;
 

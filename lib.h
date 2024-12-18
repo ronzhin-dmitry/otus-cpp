@@ -55,9 +55,10 @@ struct linear_allocator {
         }
 		if (!data)
 			throw std::bad_alloc();
+        auto prev_el = el_count;
         el_count += n;
 		std::cout << "cur el count = " << el_count << std::endl;
-		return reinterpret_cast<T *>(data + el_count);
+		return reinterpret_cast<T *>(data + prev_el);
 	}
 
 	void deallocate(T *p, std::size_t n) {
@@ -186,12 +187,12 @@ template <class T, class Allocator = std::allocator<T>> class MyVec{
 
     // Default constructor to create an empty container
     MyVec() : data_(nullptr), size_(0), capacity_(0){
-		data_ = my_alloc.allocate(0); //wonderfully dumb solution
     }
 
 	void reserve(size_t n)
 	{
-		//data_ = allocator_type().allocate(n);
+        std::cout << "Called reserve" << std::endl;
+		data_ = my_alloc.allocate(n);
 		std::cout << "Reserved data: " << data_ << std::endl;
 		capacity_ = n;
 	}
@@ -207,8 +208,16 @@ template <class T, class Allocator = std::allocator<T>> class MyVec{
 
     // Member function to add a new element at the end of the container
     void push_back(const T &value){
-		T *cur_data = my_alloc.allocate(1);
-        cur_data[0] = value;
+		if(size_ >= capacity_)
+		{
+			auto new_data_ = my_alloc.allocate(2*capacity_);
+			capacity_ *= 2;
+			for(size_t i = 0 ; i < size_; i++)
+				new_data_[i] = data_[i];
+			my_alloc.deallocate(data_, size_);
+			data_ = new_data_;
+		}
+		data_[size_++] = value;
     }
 
     // Member function to remove the last element from the container
