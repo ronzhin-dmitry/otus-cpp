@@ -3,28 +3,28 @@ cmake_minimum_required(VERSION 3.12)
 set(PATCH_VERSION "1" CACHE INTERNAL "Patch version")
 set(PROJECT_VESRION 0.0.${PATCH_VERSION})
 
-project(ip_filter VERSION ${PROJECT_VESRION})
+project(editor VERSION ${PROJECT_VESRION})
 
 option(WITH_BOOST_TEST "Whether to build Boost test" ON)
 
 configure_file(version.h.in version.h)
 
-add_executable(ip_filter ip_filter.cpp)
+add_executable(editor editor.cpp)
 
-target_include_directories(ip_filter
+target_include_directories(editor
     PRIVATE "${CMAKE_BINARY_DIR}" "${CMAKE_SOURCE_DIR}"
 )
 
-add_library(ip_filter_lib lib.cpp lib.h)
-target_include_directories(ip_filter_lib
+add_library(editor_lib lib.cpp lib.h)
+target_include_directories(editor_lib
     PRIVATE "${CMAKE_BINARY_DIR}" "${CMAKE_SOURCE_DIR}"
 )
 
-target_link_libraries(ip_filter PUBLIC
-    ip_filter_lib
+target_link_libraries(editor PUBLIC
+    editor_lib
 )
 
-set_target_properties(ip_filter ip_filter_lib PROPERTIES
+set_target_properties(editor editor_lib PROPERTIES
     CXX_STANDARD 14
     CXX_STANDARD_REQUIRED ON
 )
@@ -45,15 +45,15 @@ if(WITH_BOOST_TEST)
 
     target_link_libraries(test_version
         ${Boost_LIBRARIES}
-        ip_filter_lib
+        editor_lib
     )
 endif()
 
 if (MSVC)
-    target_compile_options(ip_filter PRIVATE
+    target_compile_options(editor PRIVATE
         /W4
     )
-    target_compile_options(ip_filter_lib PRIVATE
+    target_compile_options(editor_lib PRIVATE
         /W4
     )
     if(WITH_BOOST_TEST)
@@ -62,10 +62,10 @@ if (MSVC)
         )
     endif()
 else ()
-    target_compile_options(ip_filter PRIVATE
+    target_compile_options(editor PRIVATE
         -Wall -Wextra -pedantic -Werror
     )
-    target_compile_options(ip_filter_lib PRIVATE
+    target_compile_options(editor_lib PRIVATE
         -Wall -Wextra -pedantic -Werror
     )
     if(WITH_BOOST_TEST)
@@ -75,7 +75,7 @@ else ()
     endif()
 endif()
 
-install(TARGETS ip_filter RUNTIME DESTINATION bin)
+install(TARGETS editor RUNTIME DESTINATION bin)
 
 set(CPACK_GENERATOR DEB)
 set(CPACK_PACKAGE_VERSION_MAJOR "${PROJECT_VERSION_MAJOR}")
