@@ -1,20 +1,10 @@
 #pragma once
 #include <functional>
-/**
- * @brief simple struct for 2D screen coordinates
- * possibly more complex sub-structures can be derived
- */
-struct CoordinatePoint
-{
-protected:
-    CoordinatePoint(){};
-    float x;
-    float y;
-public:
-    float getX(){return x;};
-    float getY(){return y;};
-    CoordinatePoint(float _x, float _y): x(_x), y(_y){};
-};
+#include "lib.h"
+#include "controller.h"
+#include "vector"
+#include <memory>
+class IController;
 
 /**
  * @brief interface view class to derive from
@@ -23,24 +13,13 @@ public:
 class IView
 {
 protected:
-std::function<void()> saveFunc {};
-std::function<void()> openFunc {};
-std::function<void()> newFunc {};
-
-virtual void clickSave(){saveFunc();};
-virtual void clickOpen(){openFunc();};
-virtual void clickNew(){newFunc();}
+std::unique_ptr<IController> curController;
+std::vector<const Figure*> figuresDrawn;
 public:
-/**
- * @brief by default view has a specified number on functions, which are empty
- * to actually define proper behaviour of a view, controller inits them
- */
-void init(std::function<void()> _saveFunc, std::function<void()> _openFunc, std::function<void()> _newFunc)
+void addContoller(IController* controller)
 {
-    saveFunc = _saveFunc;
-    openFunc = _openFunc;
-    newFunc = _newFunc;
-}
+    curController = std::unique_ptr<IController>(controller);
+};
 virtual ~IView(){};
 
 /**
@@ -48,6 +27,15 @@ virtual ~IView(){};
  * should be properly defined by any custom view class
  */
 virtual void onClick(CoordinatePoint p) = 0;
+/**
+ * @brief basic method for adding figure on the view
+ */
+virtual bool drawFigure(const Figure * fig) = 0;
+
+/**
+ * @brief basic method for deleting figure from the view
+ */
+virtual bool eraseFigure(const Figure * fig) = 0;
 };
 
 
@@ -64,5 +52,15 @@ public:
  * @brief on-Click response method
  */
 void onClick(CoordinatePoint p) override;
+
+/**
+ * @brief dumb adding of a figure on view
+ */
+virtual bool drawFigure(const Figure * fig) override;
+
+/**
+ * @brief dumb figure removal
+ */
+virtual bool eraseFigure(const Figure * fig) override;
 ~DumbView(){};
 };

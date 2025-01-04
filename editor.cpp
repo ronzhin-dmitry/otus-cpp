@@ -3,6 +3,18 @@
 #include "view.h"
 #include "controller.h"
 
+
+/**
+ * @brief simple init function to pass pointers from each other
+ */
+void appInit(IModel* model, IView* view, IController* controller)
+{
+    model->addView(view);
+    view->addContoller(controller);
+    controller->addModel(model);
+}
+
+
 /**
  * @brief Entry point
  *
@@ -17,9 +29,10 @@
 int main()
 {
     //MVC self-made arch example
-    auto Model = (IModel*)(new DumbModel);
-    auto View = (IView*)(new DumbView);
-    auto Controller = (IController*)(new DumbController(View, Model));
-    Controller->runApp();
+    auto model = (IModel*)(new DumbModel);
+    auto view = (IView*)(new DumbView);
+    auto controller = (IController*)(new DumbController);
+    appInit(model, view, controller);
+    controller->runApp();
     return 0;
 }

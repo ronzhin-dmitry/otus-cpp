@@ -1,11 +1,6 @@
 #include "controller.h"
 #include <functional>
 
-IController::IController(IView* view, IModel* model): curView(view), curModel(model)
-{
-	view->init([this](){this->onSave();}, [this](){this->onOpen();}, [this](){this->onNew();});
-}
-
 void IController::runApp()
 {
 	std::cout << "Base controller class - some logic here" << std::endl;
@@ -16,6 +11,8 @@ void DumbController::runApp()
 {
     std::cout << "Dumb editor started" << std::endl;
     IController::runApp();
+    //for example, let's model user adds a figure
+    curModel->addFigure((Figure*)(new Circle({2.,2.},2.)));
 }
 
 void DumbController::onSave()
@@ -39,5 +36,11 @@ void DumbController::onOpen()
 void DumbController::onNew()
 {
     std::cout << "Dumb controller - new document created" << std::endl;
+	//Some auxilary logic here (i.e. proposing to save last edited doc)
+}
+
+void DumbController::onDraw(const Figure* fig)
+{
+    std::cout << "Dumb controller - creating new figure: " << fig->getFigureName() << std::endl;
 	//Some auxilary logic here (i.e. proposing to save last edited doc)
 }
