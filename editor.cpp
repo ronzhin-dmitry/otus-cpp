@@ -1,4 +1,7 @@
 #include "lib.h"
+#include "model.h"
+#include "view.h"
+#include "controller.h"
 
 /**
  * @brief Entry point
@@ -14,6 +17,9 @@
 int main()
 {
     //MVC self-made arch example
-    //TODO
+    auto Model = (IModel*)(new DumbModel);
+    auto View = (IView*)(new DumbView);
+    auto Controller = (IController*)(new DumbController(View, Model));
+    Controller->runApp();
     return 0;
 }

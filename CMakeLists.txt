@@ -13,7 +13,7 @@ option(WITH_BOOST_TEST "Whether to build Boost test" ON)
 
 configure_file(version.h.in version.h)
 
-add_executable(editor editor.cpp)
+add_executable(editor editor.cpp controller.cpp model.cpp view.cpp)
 
 target_include_directories(editor
     PRIVATE "${CMAKE_BINARY_DIR}" "${CMAKE_SOURCE_DIR}"
