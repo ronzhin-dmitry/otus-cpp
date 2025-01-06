@@ -56,11 +56,11 @@ public:
 /**
  * @brief dumb file opener - demonstration
  */
-bool openFile(std::string filename);
+bool openFile(std::string filename) override;
 /**
  * @brief dumb file saver - demonstration
  */
-bool saveToFile(std::string filename);
+bool saveToFile(std::string filename) override;
 /**
  * @brief dumb figure adding to model - demonstration
  */
