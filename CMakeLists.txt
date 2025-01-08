@@ -13,22 +13,22 @@ option(WITH_BOOST_TEST "Whether to build Boost test" ON)
 
 configure_file(version.h.in version.h)
 
-add_executable(editor editor.cpp controller.cpp model.cpp view.cpp)
+add_executable(matrix main.cpp)
 
-target_include_directories(editor
+target_include_directories(matrix
     PRIVATE "${CMAKE_BINARY_DIR}" "${CMAKE_SOURCE_DIR}"
 )
 
-add_library(editor_lib lib.cpp lib.h)
-target_include_directories(editor_lib
+add_library(matrix_lib lib.cpp lib.h)
+target_include_directories(matrix_lib
     PRIVATE "${CMAKE_BINARY_DIR}" "${CMAKE_SOURCE_DIR}"
 )
 
-target_link_libraries(editor PUBLIC
-    editor_lib
+target_link_libraries(matrix PUBLIC
+    matrix_lib
 )
 
-set_target_properties(editor editor_lib PROPERTIES
+set_target_properties(matrix matrix_lib PROPERTIES
     CXX_STANDARD 14
     CXX_STANDARD_REQUIRED ON
 )
@@ -49,15 +49,15 @@ if(WITH_BOOST_TEST)
 
     target_link_libraries(test_version
         ${Boost_LIBRARIES}
-        editor_lib
+        matrix_lib
     )
 endif()
 
 if (MSVC)
-    target_compile_options(editor PRIVATE
+    target_compile_options(matrix PRIVATE
         /W4
     )
-    target_compile_options(editor_lib PRIVATE
+    target_compile_options(matrix_lib PRIVATE
         /W4
     )
     if(WITH_BOOST_TEST)
@@ -66,10 +66,10 @@ if (MSVC)
         )
     endif()
 else ()
-    target_compile_options(editor PRIVATE
+    target_compile_options(matrix PRIVATE
         -Wall -Wextra -pedantic -Werror
     )
-    target_compile_options(editor_lib PRIVATE
+    target_compile_options(matrix_lib PRIVATE
         -Wall -Wextra -pedantic -Werror
     )
     if(WITH_BOOST_TEST)
@@ -79,7 +79,7 @@ else ()
     endif()
 endif()
 
-install(TARGETS editor RUNTIME DESTINATION bin)
+install(TARGETS matrix RUNTIME DESTINATION bin)
 
 set(CPACK_GENERATOR DEB)
 set(CPACK_PACKAGE_VERSION_MAJOR "${PROJECT_VERSION_MAJOR}")
