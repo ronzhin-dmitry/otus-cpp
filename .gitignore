@@ -21,3 +21,5 @@ Makefile
 install_manifest.txt
 *.tsv
 *.zip
+doxygen/*
+*.bak

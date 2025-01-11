@@ -1,3 +1,6 @@
+/**
+@file lib.cpp
+*/
 #include "lib.h"
 #include "version.h"
 
