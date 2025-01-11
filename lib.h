@@ -18,8 +18,8 @@ int version();
 
 /**
  * @brief class to store sparse matrix
- * no constructor will be publicly available
- * only possible access point would be proxy-class Matrix
+ * contains class for proxy access (to support default value)
+ * also has classes for iterator and a single row-slice (to access via [][])
  */
 template <typename T, int D>
 class Matrix
