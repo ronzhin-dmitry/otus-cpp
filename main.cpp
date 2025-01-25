@@ -17,7 +17,7 @@
 int main()
 {
     //Command parser - entry points. Main only calls for app init.
-    Application app(nullptr); //TODO - put valid state
+    Application app(3, nullptr); //TODO - put valid state
     app.runApp();
     return 0;
 }

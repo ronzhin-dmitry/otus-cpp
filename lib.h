@@ -5,14 +5,17 @@
 #include <list>
 #include <string>
 #include <memory>
+#include <ctime>
 
 /**
  * @brief simple function to return version of the release.
  */
 int version();
+class Application;
 
 /**
  * @brief general command class, self-contained. Allows serizalization and execution (possible) of a command.
+ * Actual simple embodiment of command pattern which is not required in this app.
  */
 class ICommand
 {
@@ -25,6 +28,7 @@ class DumbCommand:ICommand
 {
     private:
         std::string body;
+        time_t creation_time;
         DumbCommand(){};
     public:
         std::string serialize() override
@@ -32,12 +36,33 @@ class DumbCommand:ICommand
             return body;
         }
 
-        DumbCommand(std::string cmd):body(cmd){};
+        DumbCommand(std::string cmd):body(cmd), creation_time(time(0)){};
 };
 
-//TODO - add observer logger class
+class ILogger
+{
+    public:
+    virtual void update(const std::list<ICommand*> &) = 0;
+};
 
-class Application;
+class ConsoleLogger:ILogger
+{
+    public:
+        void update(const std::list<ICommand*> &)
+        {
+            //TODO
+            return;
+        }
+};
+
+class FileLogger:ILogger
+{
+    void update(const std::list<ICommand*> &)
+        {
+            //TODO
+            return;
+        }
+};
 
 /**
  * @brief Virtual class for current state of parser (we model it with finite automaton)
@@ -50,6 +75,38 @@ public:
     virtual void processInput(Application *) = 0;
 };
 
+class StaticState:IState
+{
+public:
+    IState& getInstance()
+    {
+        static StaticState instance;
+        return instance;
+    }
+
+    void processInput(Application *)
+    {
+        //TODO: process input stream line
+        return;
+    }
+};
+
+class DynamicState:IState
+{
+public:
+    IState& getInstance()
+    {
+        static DynamicState instance;
+        return instance;
+    }
+
+    void processInput(Application *)
+    {
+        //TODO: process input stream line
+        return;
+    }
+};
+
 /**
  * @brief Base class for context of the automaton, allows for context switching based on states and inputs
  */
@@ -58,14 +115,17 @@ class Application
     private:
     IState* curState;
     Application(){};
+    std::list<ICommand*> coms;
+    int N; //max commands in static mode
     public:
     void setCurrentState(IState* newState) {
             curState = newState;
-         }
+    }
 
-    Application(IState* initialState)
+    Application(int N_, IState* initialState)
     {
         curState = initialState;
+        N = N_;
     }
 
     void runApp()
