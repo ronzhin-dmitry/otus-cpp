@@ -7,28 +7,28 @@ endif()
 set(PATCH_VERSION "1" CACHE INTERNAL "Patch version")
 set(PROJECT_VESRION 0.0.${PATCH_VERSION})
 
-project(matrix VERSION ${PROJECT_VESRION})
+project(bulk VERSION ${PROJECT_VESRION})
 
 option(WITH_BOOST_TEST "Whether to build Boost test" ON)
 
 configure_file(version.h.in version.h)
 
-add_executable(matrix main.cpp)
+add_executable(bulk main.cpp)
 
-target_include_directories(matrix
+target_include_directories(bulk
     PRIVATE "${CMAKE_BINARY_DIR}" "${CMAKE_SOURCE_DIR}"
 )
 
-add_library(matrix_lib lib.cpp lib.h)
-target_include_directories(matrix_lib
+add_library(bulk_lib lib.cpp lib.h)
+target_include_directories(bulk_lib
     PRIVATE "${CMAKE_BINARY_DIR}" "${CMAKE_SOURCE_DIR}"
 )
 
-target_link_libraries(matrix PUBLIC
-    matrix_lib
+target_link_libraries(bulk PUBLIC
+    bulk_lib
 )
 
-set_target_properties(matrix matrix_lib PROPERTIES
+set_target_properties(bulk bulk_lib PROPERTIES
     CXX_STANDARD 14
     CXX_STANDARD_REQUIRED ON
 )
@@ -49,15 +49,15 @@ if(WITH_BOOST_TEST)
 
     target_link_libraries(test_version
         ${Boost_LIBRARIES}
-        matrix_lib
+        bulk_lib
     )
 endif()
 
 if (MSVC)
-    target_compile_options(matrix PRIVATE
+    target_compile_options(bulk PRIVATE
         /W4
     )
-    target_compile_options(matrix_lib PRIVATE
+    target_compile_options(bulk_lib PRIVATE
         /W4
     )
     if(WITH_BOOST_TEST)
@@ -66,10 +66,10 @@ if (MSVC)
         )
     endif()
 else ()
-    target_compile_options(matrix PRIVATE
+    target_compile_options(bulk PRIVATE
         -Wall -Wextra -pedantic -Werror
     )
-    target_compile_options(matrix_lib PRIVATE
+    target_compile_options(bulk_lib PRIVATE
         -Wall -Wextra -pedantic -Werror
     )
     if(WITH_BOOST_TEST)
@@ -79,7 +79,7 @@ else ()
     endif()
 endif()
 
-install(TARGETS matrix RUNTIME DESTINATION bin)
+install(TARGETS bulk RUNTIME DESTINATION bin)
 
 set(CPACK_GENERATOR DEB)
 set(CPACK_PACKAGE_VERSION_MAJOR "${PROJECT_VERSION_MAJOR}")
