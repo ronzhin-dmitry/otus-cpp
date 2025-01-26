@@ -16,8 +16,12 @@
  */
 int main()
 {
-    //Command parser - entry points. Main only calls for app init.
-    Application app(3, nullptr); //TODO - put valid state
+    // Command parser - entry points. Main only calls for app init.
+    ILoggerPtr cLogger(new ConsoleLogger());
+    ILoggerPtr fLogger(new FileLogger());
+    Application app(3); // TODO - put valid state
+    app.subscribeLogger(cLogger);
+    app.subscribeLogger(fLogger);
     app.runApp();
     return 0;
 }

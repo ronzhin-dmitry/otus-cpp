@@ -19,119 +19,79 @@ class Application;
  */
 class ICommand
 {
-    public:
-        virtual std::string serialize() = 0;
-        virtual void exec() {};
+
+public:
+    virtual std::string serialize() = 0;
+    virtual void exec() {};
+    virtual ~ICommand() {};
 };
 
-class DumbCommand:ICommand
+class DumbCommand : public ICommand
 {
-    private:
-        std::string body;
-        time_t creation_time;
-        DumbCommand(){};
-    public:
-        std::string serialize() override
-        {
-            return body;
-        }
+private:
+    std::string body;
+    time_t creation_time;
+    DumbCommand() {};
 
-        DumbCommand(std::string cmd):body(cmd), creation_time(time(0)){};
-};
+public:
+    std::string serialize() override
+    {
+        return body;
+    }
 
-class ILogger
-{
-    public:
-    virtual void update(const std::list<ICommand*> &) = 0;
+    DumbCommand(std::string cmd) : body(cmd), creation_time(time(0)) {};
+    ~DumbCommand() {};
 };
-
-class ConsoleLogger:ILogger
-{
-    public:
-        void update(const std::list<ICommand*> &)
-        {
-            //TODO
-            return;
-        }
-};
-
-class FileLogger:ILogger
-{
-    void update(const std::list<ICommand*> &)
-        {
-            //TODO
-            return;
-        }
-};
+using ICommandPtr = std::unique_ptr<ICommand>;
 
 /**
  * @brief Virtual class for current state of parser (we model it with finite automaton)
- * Each state implemented via singletone pattern
  */
 class IState
 {
 public:
-    virtual IState& getInstance() = 0;
     virtual void processInput(Application *) = 0;
+    virtual ~IState() {};
 };
 
-class StaticState:IState
+using IStatePtr = std::unique_ptr<IState>;
+
+class ILogger
 {
 public:
-    IState& getInstance()
-    {
-        static StaticState instance;
-        return instance;
-    }
-
-    void processInput(Application *)
-    {
-        //TODO: process input stream line
-        return;
-    }
+    virtual void log(const std::list<ICommandPtr> &) = 0;
+    virtual ~ILogger() {};
 };
 
-class DynamicState:IState
-{
-public:
-    IState& getInstance()
-    {
-        static DynamicState instance;
-        return instance;
-    }
-
-    void processInput(Application *)
-    {
-        //TODO: process input stream line
-        return;
-    }
-};
+using ILoggerPtr = std::unique_ptr<ILogger>;
 
 /**
  * @brief Base class for context of the automaton, allows for context switching based on states and inputs
  */
 class Application
 {
-    private:
-    IState* curState;
-    Application(){};
-    std::list<ICommand*> coms;
-    int N; //max commands in static mode
-    public:
-    void setCurrentState(IState* newState) {
-            curState = newState;
+private:
+    IStatePtr curState;
+    Application() {};
+    std::list<ICommandPtr> coms;
+    std::list<ILoggerPtr> loggers;
+    size_t N; // max commands in static mode
+public:
+    void setCurrentState(IStatePtr newState)
+    {
+        if (newState != curState)
+        {
+            coms.clear();
+        }
+        curState = std::move(newState);
     }
 
-    Application(int N_, IState* initialState)
-    {
-        curState = initialState;
-        N = N_;
-    }
+    Application(size_t N_);
 
     void runApp()
     {
         std::cout << "app started" << std::endl;
-        while(curState != nullptr)
+        while (curState != nullptr)
         {
             curState->processInput(this);
         }
@@ -141,6 +101,74 @@ class Application
     void terminate()
     {
         curState = nullptr;
-        //TODO - consider additional logic
+        // TODO - consider additional logic
     }
+
+    void subscribeLogger(ILoggerPtr &logger)
+    {
+        loggers.emplace_back(std::move(logger));
+    }
+
+    void flushLogs()
+    {
+        for (auto &logger : loggers)
+            logger->log(coms);
+        coms.clear();
+    }
+
+    void staticPush(ICommandPtr &cmd)
+    {
+        coms.emplace_back(std::move(cmd));
+        if (coms.size() == N)
+            flushLogs();
+    }
+
+    void dynamicPush(ICommandPtr &cmd)
+    {
+        coms.emplace_back(std::move(cmd));
+    }
+};
+
+class StaticState : public IState
+{
+public:
+    void processInput(Application *app);
+    ~StaticState() {};
+};
+
+class DynamicState : public IState
+{
+public:
+    void processInput(Application *);
+    ~DynamicState() {};
+};
+
+class ConsoleLogger : public ILogger
+{
+public:
+    void log(const std::list<ICommandPtr> &comms)
+    {
+        for (auto it = comms.begin(); it != comms.end(); it++)
+        {
+            std::cout << (*it)->serialize();
+            if(*it != comms.back())
+                std::cout << ",";
+        }
+        std::cout << std::endl;
+        return;
+    }
+    ConsoleLogger() {};
+    ~ConsoleLogger() {};
+};
+
+class FileLogger : public ILogger
+{
+public:
+    void log(const std::list<ICommandPtr> &)
+    {
+        // TODO
+        return;
+    }
+    FileLogger() {};
+    ~FileLogger() {};
 };
