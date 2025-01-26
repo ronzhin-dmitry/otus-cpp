@@ -17,7 +17,7 @@
  */
 int main(int argc, char *argv[])
 {
-    // Command parser - entry points. Main only calls for app init.
+    // Just some command line arguments parsing
     int N = N_DEFAULT; // default
     if (argc > 1)
     {
@@ -46,9 +46,10 @@ int main(int argc, char *argv[])
         }
     }
 
+    //Command parser - entry points. Loggers should be created and subscribed to parser
     ILoggerPtr cLogger(new ConsoleLogger());
     ILoggerPtr fLogger(new FileLogger());
-    Application app(N); // TODO - put valid state
+    Application app(N);
     app.subscribeLogger(cLogger);
     app.subscribeLogger(fLogger);
     app.runApp();
