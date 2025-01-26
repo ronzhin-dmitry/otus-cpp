@@ -44,15 +44,30 @@ void StaticState::processInput(Application *app)
 	return;
 }
 
-void DynamicState::processInput(Application * app)
+void DynamicState::processInput(Application *app)
 {
-	std::cout << "In Dyn " << std::endl;
 	std::string str;
 	getline(std::cin, str);
 	if (std::cin.bad() || std::cin.eof())
 	{
-		app->flushLogs();
 		app->terminate();
+	}
+	else
+	{
+		if (str == "{")
+			openCounter += 1;
+		else if (str == "}")
+			openCounter -= 1;
+		else
+		{
+			ICommandPtr newComm(new DumbCommand(str));
+			app->dynamicPush(newComm);
+		}
+		if(openCounter == 0)
+		{
+			app->flushLogs();
+			app->setCurrentState(IStatePtr{new StaticState()});
+		}
 	}
 	return;
 }

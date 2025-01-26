@@ -6,6 +6,7 @@
 #include <string>
 #include <memory>
 #include <ctime>
+#include <fstream>
 
 /**
  * @brief simple function to return version of the release.
@@ -19,18 +20,20 @@ class Application;
  */
 class ICommand
 {
-
+private:
+    time_t creation_time;
 public:
     virtual std::string serialize() = 0;
     virtual void exec() {};
+    ICommand() : creation_time(time(0)){};
+    time_t getCreationTime() { return creation_time;}
     virtual ~ICommand() {};
 };
 
 class DumbCommand : public ICommand
 {
 private:
-    std::string body;
-    time_t creation_time;
+    std::string body; //body can be empty, any string is valid
     DumbCommand() {};
 
 public:
@@ -39,7 +42,7 @@ public:
         return body;
     }
 
-    DumbCommand(std::string cmd) : body(cmd), creation_time(time(0)) {};
+    DumbCommand(std::string cmd) : body(cmd) {};
     ~DumbCommand() {};
 };
 using ICommandPtr = std::unique_ptr<ICommand>;
@@ -90,12 +93,10 @@ public:
 
     void runApp()
     {
-        std::cout << "app started" << std::endl;
         while (curState != nullptr)
         {
             curState->processInput(this);
         }
-        std::cout << "app finished" << std::endl;
     }
 
     void terminate()
@@ -138,6 +139,7 @@ public:
 
 class DynamicState : public IState
 {
+    int openCounter = 1;
 public:
     void processInput(Application *);
     ~DynamicState() {};
@@ -148,6 +150,8 @@ class ConsoleLogger : public ILogger
 public:
     void log(const std::list<ICommandPtr> &comms)
     {
+        if(comms.size() == 0)
+            return;
         for (auto it = comms.begin(); it != comms.end(); it++)
         {
             std::cout << (*it)->serialize();
@@ -164,9 +168,20 @@ public:
 class FileLogger : public ILogger
 {
 public:
-    void log(const std::list<ICommandPtr> &)
+    void log(const std::list<ICommandPtr> & comms)
     {
-        // TODO
+        if(comms.size() == 0)
+            return;
+        time_t tt = (*comms.begin())->getCreationTime();
+        std::string createTime = std::to_string((long long)tt);
+        std::ofstream out(std::string("bulk") + createTime + ".log");
+        for (auto it = comms.begin(); it != comms.end(); it++)
+        {
+            out << (*it)->serialize();
+            if(*it != comms.back())
+                out << ",";
+        }
+        out.close();
         return;
     }
     FileLogger() {};
