@@ -11,6 +11,9 @@ project(bayan VERSION ${PROJECT_VESRION})
 
 option(WITH_BOOST_TEST "Whether to build Boost test" ON)
 
+find_package(Boost COMPONENTS filesystem REQUIRED)
+find_package(Boost COMPONENTS program_options REQUIRED)
+
 configure_file(version.h.in version.h)
 
 add_executable(bayan main.cpp)
@@ -21,11 +24,12 @@ target_include_directories(bayan
 
 add_library(bayan_lib lib.cpp lib.h)
 target_include_directories(bayan_lib
-    PRIVATE "${CMAKE_BINARY_DIR}" "${CMAKE_SOURCE_DIR}"
+    PRIVATE "${CMAKE_BINARY_DIR}" "${CMAKE_SOURCE_DIR}" "${Boost_INCLUDE_DIR}"
 )
 
 target_link_libraries(bayan PUBLIC
     bayan_lib
+    Boost::filesystem
 )
 
 set_target_properties(bayan bayan_lib PROPERTIES

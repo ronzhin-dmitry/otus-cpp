@@ -7,6 +7,8 @@
 #include <memory>
 #include <ctime>
 #include <fstream>
+#include <boost/filesystem.hpp>
+#include <boost/program_options.hpp>
 
 /**
  * @brief simple function to return version of the release.
