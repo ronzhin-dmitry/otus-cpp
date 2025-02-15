@@ -7,28 +7,28 @@ endif()
 set(PATCH_VERSION "1" CACHE INTERNAL "Patch version")
 set(PROJECT_VESRION 0.0.${PATCH_VERSION})
 
-project(bulk VERSION ${PROJECT_VESRION})
+project(bayan VERSION ${PROJECT_VESRION})
 
 option(WITH_BOOST_TEST "Whether to build Boost test" ON)
 
 configure_file(version.h.in version.h)
 
-add_executable(bulk main.cpp)
+add_executable(bayan main.cpp)
 
-target_include_directories(bulk
+target_include_directories(bayan
     PRIVATE "${CMAKE_BINARY_DIR}" "${CMAKE_SOURCE_DIR}"
 )
 
-add_library(bulk_lib lib.cpp lib.h)
-target_include_directories(bulk_lib
+add_library(bayan_lib lib.cpp lib.h)
+target_include_directories(bayan_lib
     PRIVATE "${CMAKE_BINARY_DIR}" "${CMAKE_SOURCE_DIR}"
 )
 
-target_link_libraries(bulk PUBLIC
-    bulk_lib
+target_link_libraries(bayan PUBLIC
+    bayan_lib
 )
 
-set_target_properties(bulk bulk_lib PROPERTIES
+set_target_properties(bayan bayan_lib PROPERTIES
     CXX_STANDARD 14
     CXX_STANDARD_REQUIRED ON
 )
@@ -49,15 +49,15 @@ if(WITH_BOOST_TEST)
 
     target_link_libraries(test_version
         ${Boost_LIBRARIES}
-        bulk_lib
+        bayan_lib
     )
 endif()
 
 if (MSVC)
-    target_compile_options(bulk PRIVATE
+    target_compile_options(bayan PRIVATE
         /W4
     )
-    target_compile_options(bulk_lib PRIVATE
+    target_compile_options(bayan_lib PRIVATE
         /W4
     )
     if(WITH_BOOST_TEST)
@@ -66,10 +66,10 @@ if (MSVC)
         )
     endif()
 else ()
-    target_compile_options(bulk PRIVATE
+    target_compile_options(bayan PRIVATE
         -Wall -Wextra -pedantic -Werror
     )
-    target_compile_options(bulk_lib PRIVATE
+    target_compile_options(bayan_lib PRIVATE
         -Wall -Wextra -pedantic -Werror
     )
     if(WITH_BOOST_TEST)
@@ -79,7 +79,7 @@ else ()
     endif()
 endif()
 
-install(TARGETS bulk RUNTIME DESTINATION bin)
+install(TARGETS bayan RUNTIME DESTINATION bin)
 
 set(CPACK_GENERATOR DEB)
 set(CPACK_PACKAGE_VERSION_MAJOR "${PROJECT_VERSION_MAJOR}")
