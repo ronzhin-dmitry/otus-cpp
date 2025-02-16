@@ -30,6 +30,7 @@ target_include_directories(bayan_lib
 target_link_libraries(bayan PUBLIC
     bayan_lib
     Boost::filesystem
+    Boost::program_options
 )
 
 set_target_properties(bayan bayan_lib PROPERTIES
