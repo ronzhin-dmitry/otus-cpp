@@ -7,6 +7,9 @@
 #include <memory>
 #include <ctime>
 #include <fstream>
+#include <queue>
+#include <unordered_map>
+#include <unordered_set>
 #include <boost/filesystem.hpp>
 #include <boost/program_options.hpp>
 #include <boost/regex.hpp>
