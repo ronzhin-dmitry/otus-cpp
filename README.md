@@ -1,29 +1,53 @@
 # bayan
 
 
-BAYAN tool
+**BAYAN tool**
 Утилита для поиска дубликатов файлов
+
 Опции командной строки:
+
   -h [ --help ]                  Help screen
+
+
   -d [ --directories ] arg (=./) Directories to scan (may set several, space 
                                  separated)
+
+
   -e [ --except ] arg            Directories to skip during scan (may set 
                                  several, space separated)
+
+
   -r [ --recursive ] arg (=0)    Make recursive search (same for all 
                                  directories), false to stay in defined 
                                  directories only
+
+
   --min-file-size arg (=1)       Minimum file size in bytes
+
+
   -m [ --mask ] arg (=.*)        File name masks, allowed for comparison (case 
-                                 insetivie)
+                                 insensitive)
+
+
   -b [ --block-size ] arg (=3)   Size of block during scan (bytes)
+
+
   --hash-algorithm arg (=crc32)  Hash algorithm to use (currently supported 
                                  crc32, md5)
+
+
   -p [ --print-params ] arg (=0) Display run parameters at startup
 
+
+
 Пример сборки и запуска:
+
 rm -R ./build
+
 cmake -B build/
+
 cmake --build ./build/
+
 ./build/bayan -d="/somepath1 /somepath2" -e="/some_excl_path1 /some_excl_path2" -r true -m .* --hash-algorithm md5
 
 

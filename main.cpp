@@ -27,7 +27,7 @@ int main(int argc, char* argv[])
         ("except,e", value<std::string>()->default_value(""), "Directories to skip during scan (may set several, space separated)")
         ("recursive,r", value<bool>()->default_value(false),"Make recursive search (same for all directories), false to stay in defined directories only")
         ("min-file-size",value<size_t>()->default_value(1),"Minimum file size in bytes")
-        ("mask,m",value<std::string>()->default_value(".*"), "File name masks, allowed for comparison (case insetivie)")
+        ("mask,m",value<std::string>()->default_value(".*"), "File name masks, allowed for comparison (case insensitive)")
         ("block-size,b",value<size_t>()->default_value(3),"Size of block during scan (bytes)")
         ("hash-algorithm", value<std::string>()->default_value("crc32"), "Hash algorithm to use (currently supported crc32, md5)")
         ("print-params,p",value<bool>()->default_value(false),"Display run parameters at startup");
