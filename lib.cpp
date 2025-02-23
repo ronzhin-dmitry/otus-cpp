@@ -113,7 +113,7 @@ Hasher::Hasher(std::string hash_name)
 		ht = HashType::MD5;
 	else
 		throw "Not implemented";
-};
+}
 
 /**
  * @brief main functions to search duplicates. Carefully reads some input and stores hash indices for comparison.
@@ -209,4 +209,4 @@ std::vector<std::vector<std::string>>& Scanner::find_duplicates(std::vector<std:
 		}
 	}
 	return scan_result;
-};
+}
