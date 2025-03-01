@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include "lib.h"
+#include <unordered_map>
 
 namespace async {
 //Multithread wrappers for async calls
