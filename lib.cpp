@@ -16,7 +16,7 @@ int version()
 Application::Application(size_t N_)
 {
 	curState = IStatePtr{new StaticState()};
-	reader = IReaderPtr{new CINReader()};
+	reader = IReaderPtr{new BasicReader()};
 	N = N_;
 }
 
@@ -27,30 +27,40 @@ Application::Application(size_t N_, IReaderPtr ir)
 	N = N_;
 }
 
-bool CINReader::read(std::string& str)
+int BasicReader::read(std::string& str)
 {
-	getline(std::cin, str);
-	if (std::cin.bad() || std::cin.eof())
+	getline(*stream, str);
+	if (stream->bad() || stream->eof())
 	{
-		return false;
+		return 1;
 	}
-	return true;
+	return 0;
 }
 
-bool StringReader::read(std::string& str)
+int YieldReader::read(std::string& str)
 {
-	getline(std::cin, str);
-	return true;
+	getline(*stream, str);
+	if (stream->bad() || stream->eof())
+	{
+		return 2;
+	}
+	return 0; //will do that until terminate - we can wait for new data 
 }
 
 void StaticState::processInput(Application *app)
 {
-	if(!app->read_res)
+	if(app->read_res == 1)
 	{
 		app->flushLogs();
-		app->terminate();
 		return;
 	}
+	else if(app->read_res == 2)
+	{
+		buf = app->str;
+		return;
+	}
+	app->str = buf + app->str;
+	buf = "";
 	if (app->str == "{")
 	{
 		app->flushLogs();
@@ -66,11 +76,17 @@ void StaticState::processInput(Application *app)
 
 void DynamicState::processInput(Application *app)
 {
-	if(!app->read_res)
+	if(app->read_res == 1)
 	{
-		app->terminate();
 		return;
 	}
+	else if(app->read_res == 2)
+	{
+		buf = app->str;
+		return;
+	}
+	app->str = buf + app->str;
+	buf = "";
 	if (app->str == "{")
 		openCounter += 1;
 	else if (app->str == "}")

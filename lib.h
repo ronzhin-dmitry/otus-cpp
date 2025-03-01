@@ -7,6 +7,7 @@
 #include <memory>
 #include <ctime>
 #include <fstream>
+#include <sstream>
 
 /**
  * @brief simple function to return version of the release.
@@ -52,6 +53,8 @@ using ICommandPtr = std::unique_ptr<ICommand>;
  */
 class IState
 {
+protected:
+    std::string buf = "";
 public:
     virtual void processInput(Application *) = 0;
     virtual ~IState() {};
@@ -61,30 +64,65 @@ using IStatePtr = std::unique_ptr<IState>;
 
 class ILogger
 {
+protected:
+    std::string id = "";
 public:
     virtual void log(const std::list<ICommandPtr> &) = 0;
     virtual ~ILogger() {};
+    void set_id(std::string& i) { id = i;};
 };
 
-class IReader
-{
+class IReader {
+protected:
+    std::istream* stream;
+    void assign_stream(std::istream* s) { stream = s; }
+    
 public:
-    virtual bool read(std::string& str) = 0;
-    virtual ~IReader() {};
+    IReader(std::istream* s) : stream(s) {}
+    virtual int read(std::string& str) = 0;
+    virtual void recieveString(std::string& str) = 0;
+    virtual ~IReader() {}
 };
 
-class CINReader:public IReader
-{
-public:
-    bool read(std::string& str) override;
+class StringReaderBase {
+protected:
+    std::istringstream iss;
 };
 
-class StringReader:public IReader
-{
-    std::string str;
+class BasicReader : public StringReaderBase, public IReader {
 public:
-    StringReader(std::string init_str): str(init_str) {};
-    bool read(std::string& str) override;
+    BasicReader() : IReader(&iss) {}  // Теперь iss уже существует
+    
+    BasicReader(const std::string& s) 
+        : IReader(&iss)  // Передаем адрес iss в базовый класс
+    { 
+        iss.str(s);  // Устанавливаем строку
+    }
+
+    int read(std::string& str) override;
+
+    void recieveString(std::string& str) override {
+        iss.str(str);
+        iss.clear();
+    }
+};
+
+class YieldReader : public StringReaderBase, public IReader {
+public:
+    YieldReader() : IReader(&iss) {}
+    
+    YieldReader(const std::string& s) 
+        : IReader(&iss) 
+    { 
+        iss.str(s);
+    }
+
+    int read(std::string& str) override;
+
+    void recieveString(std::string& str) override {
+        iss.str(str);
+        iss.clear();
+    }
 };
 
 using ILoggerPtr = std::unique_ptr<ILogger>;
@@ -103,7 +141,7 @@ private:
     size_t N; // max commands in static mode
 public:
     std::string str;
-    bool read_res;
+    int read_res;
     void setCurrentState(IStatePtr newState)
     {
         if (newState != curState)
@@ -117,16 +155,20 @@ public:
     Application(size_t N_, IReaderPtr ir);
     void runApp()
     {
-        while (curState != nullptr || read_res == false)
+        read_res = 0;
+        while (curState != nullptr && read_res == 0)
         {
             read_res = reader->read(str);
             curState->processInput(this);
+            if(read_res > 1)
+                break;
         }
     }
 
     void terminate()
     {
-        curState = nullptr;
+        read_res = 1;
+        curState->processInput(this);
         // TODO - consider additional logic
     }
 
@@ -152,6 +194,15 @@ public:
     void dynamicPush(ICommandPtr &cmd)
     {
         coms.emplace_back(std::move(cmd));
+    }
+
+    void pushStringToReader(std::string& str)
+    {
+        //for the basic reader it will start and finish
+        //for yield reader it will wait for new string or manual terminate
+        reader->recieveString(str);
+        read_res = 0;
+        this->runApp();
     }
 };
 
@@ -199,7 +250,7 @@ public:
             return;
         time_t tt = (*comms.begin())->getCreationTime();
         std::string createTime = std::to_string((long long)tt);
-        std::ofstream out(std::string("bulk") + createTime + ".log");
+        std::ofstream out(std::string("bulk") + createTime + "_" + id +".log");
         for (auto it = comms.begin(); it != comms.end(); it++)
         {
             out << (*it)->serialize();

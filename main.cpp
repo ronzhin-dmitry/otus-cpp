@@ -14,6 +14,7 @@
  *
  * @return Program exit status
  */
+/*
 int main(int argc, char *argv[])
 {
     // Just some command line arguments parsing
@@ -54,8 +55,8 @@ int main(int argc, char *argv[])
     app.runApp();
     return 0;
 }
-/*
-int main(int argc, char *argv[])
+*/
+int main()
 {
     std::size_t bulk = 5;
     auto h = async::connect(bulk);
@@ -68,4 +69,4 @@ int main(int argc, char *argv[])
     async::disconnect(h2);
 
     return 0;
-}*/
+}
