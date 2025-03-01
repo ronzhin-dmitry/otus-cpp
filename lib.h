@@ -248,9 +248,11 @@ public:
     {
         if(comms.size() == 0)
             return;
+        int randomNum = rand() % 100001;
+        std::string random_id = std::to_string(randomNum);
         time_t tt = (*comms.begin())->getCreationTime();
         std::string createTime = std::to_string((long long)tt);
-        std::ofstream out(std::string("bulk") + createTime + "_" + id +".log");
+        std::ofstream out(std::string("bulk") + createTime + "_" + random_id +"_" + id +".log");
         for (auto it = comms.begin(); it != comms.end(); it++)
         {
             out << (*it)->serialize();
