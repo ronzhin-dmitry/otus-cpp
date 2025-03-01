@@ -16,58 +16,74 @@ int version()
 Application::Application(size_t N_)
 {
 	curState = IStatePtr{new StaticState()};
+	reader = IReaderPtr{new CINReader()};
 	N = N_;
+}
+
+Application::Application(size_t N_, IReaderPtr ir)
+{
+	curState = IStatePtr{new StaticState()};
+	reader = std::move(ir);
+	N = N_;
+}
+
+bool CINReader::read(std::string& str)
+{
+	getline(std::cin, str);
+	if (std::cin.bad() || std::cin.eof())
+	{
+		return false;
+	}
+	return true;
+}
+
+bool StringReader::read(std::string& str)
+{
+	getline(std::cin, str);
+	return true;
 }
 
 void StaticState::processInput(Application *app)
 {
-	std::string str;
-	getline(std::cin, str);
-	if (std::cin.bad() || std::cin.eof())
+	if(!app->read_res)
 	{
 		app->flushLogs();
 		app->terminate();
+		return;
+	}
+	if (app->str == "{")
+	{
+		app->flushLogs();
+		app->setCurrentState(IStatePtr{new DynamicState()});
 	}
 	else
 	{
-		if (str == "{")
-		{
-			app->flushLogs();
-			app->setCurrentState(IStatePtr{new DynamicState()});
-		}
-		else
-		{
-			ICommandPtr newComm(new DumbCommand(str));
-			app->staticPush(newComm);
-		}
+		ICommandPtr newComm(new DumbCommand(app->str));
+		app->staticPush(newComm);
 	}
 	return;
 }
 
 void DynamicState::processInput(Application *app)
 {
-	std::string str;
-	getline(std::cin, str);
-	if (std::cin.bad() || std::cin.eof())
+	if(!app->read_res)
 	{
 		app->terminate();
+		return;
 	}
+	if (app->str == "{")
+		openCounter += 1;
+	else if (app->str == "}")
+		openCounter -= 1;
 	else
 	{
-		if (str == "{")
-			openCounter += 1;
-		else if (str == "}")
-			openCounter -= 1;
-		else
-		{
-			ICommandPtr newComm(new DumbCommand(str));
-			app->dynamicPush(newComm);
-		}
-		if(openCounter == 0)
-		{
-			app->flushLogs();
-			app->setCurrentState(IStatePtr{new StaticState()});
-		}
+		ICommandPtr newComm(new DumbCommand(app->str));
+		app->dynamicPush(newComm);
+	}
+	if(openCounter == 0)
+	{
+		app->flushLogs();
+		app->setCurrentState(IStatePtr{new StaticState()});
 	}
 	return;
 }

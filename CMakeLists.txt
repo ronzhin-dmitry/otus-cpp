@@ -19,7 +19,7 @@ target_include_directories(bulk
     PRIVATE "${CMAKE_BINARY_DIR}" "${CMAKE_SOURCE_DIR}"
 )
 
-add_library(bulk_lib lib.cpp lib.h)
+add_library(bulk_lib lib.cpp lib.h async.cpp async.h)
 target_include_directories(bulk_lib
     PRIVATE "${CMAKE_BINARY_DIR}" "${CMAKE_SOURCE_DIR}"
 )

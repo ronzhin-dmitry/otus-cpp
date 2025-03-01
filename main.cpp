@@ -1,8 +1,7 @@
 /**
 @file main.cpp
 */
-#include "lib.h"
-#define N_DEFAULT 3
+#include "async.h"
 
 /**
  * @brief Entry point
@@ -18,7 +17,7 @@
 int main(int argc, char *argv[])
 {
     // Just some command line arguments parsing
-    int N = N_DEFAULT; // default
+    int N = 3; // default
     if (argc > 1)
     {
         std::string arg = argv[1];
@@ -32,8 +31,8 @@ int main(int argc, char *argv[])
             }
             else if (N < 1)
             {
-                std::cerr << "Negative input N " << arg << " setting to default value " << N_DEFAULT << '\n';
-                N = N_DEFAULT;
+                std::cerr << "Negative input N " << arg << " setting to default value " << 3 << '\n';
+                N = 3;
             }
         }
         catch (std::invalid_argument const &ex)
@@ -55,3 +54,18 @@ int main(int argc, char *argv[])
     app.runApp();
     return 0;
 }
+/*
+int main(int argc, char *argv[])
+{
+    std::size_t bulk = 5;
+    auto h = async::connect(bulk);
+    auto h2 = async::connect(bulk);
+    async::receive(h, "1", 1);
+    async::receive(h2, "1\n", 2);
+    async::receive(h, "\n2\n3\n4\n5\n6\n{\na\n", 15);
+    async::receive(h, "b\nc\nd\n}\n89\n", 11);
+    async::disconnect(h);
+    async::disconnect(h2);
+
+    return 0;
+}*/

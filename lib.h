@@ -66,8 +66,29 @@ public:
     virtual ~ILogger() {};
 };
 
-using ILoggerPtr = std::unique_ptr<ILogger>;
+class IReader
+{
+public:
+    virtual bool read(std::string& str) = 0;
+    virtual ~IReader() {};
+};
 
+class CINReader:public IReader
+{
+public:
+    bool read(std::string& str) override;
+};
+
+class StringReader:public IReader
+{
+    std::string str;
+public:
+    StringReader(std::string init_str): str(init_str) {};
+    bool read(std::string& str) override;
+};
+
+using ILoggerPtr = std::unique_ptr<ILogger>;
+using IReaderPtr = std::unique_ptr<IReader>;
 /**
  * @brief Base class for context of the automaton, allows for context switching based on states and inputs
  */
@@ -75,11 +96,14 @@ class Application
 {
 private:
     IStatePtr curState;
+    IReaderPtr reader;
     Application() {};
     std::list<ICommandPtr> coms;
     std::list<ILoggerPtr> loggers;
     size_t N; // max commands in static mode
 public:
+    std::string str;
+    bool read_res;
     void setCurrentState(IStatePtr newState)
     {
         if (newState != curState)
@@ -90,11 +114,12 @@ public:
     }
 
     Application(size_t N_);
-
+    Application(size_t N_, IReaderPtr ir);
     void runApp()
     {
-        while (curState != nullptr)
+        while (curState != nullptr || read_res == false)
         {
+            read_res = reader->read(str);
             curState->processInput(this);
         }
     }
