@@ -80,10 +80,21 @@ else()
 endif()
 
 # Настройка CPack
+# Указываем контактные данные мейнтейнера
+set(CPACK_PACKAGE_CONTACT "d.v.ronjin@gmail.com")
+
+set(CPACK_DEBIAN_PACKAGE_DEPENDS "libc6, libpthread-stubs0-dev")
+
+# Дополнительно можно указать описание
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Async project for handling bulk operations")
+
+# Генерация пакета DEB
 set(CPACK_GENERATOR "DEB")
 set(CPACK_PACKAGE_NAME "async")
 set(CPACK_DEBIAN_FILE_NAME DEB-DEFAULT)
+
 include(CPack)
+
 
 # Включение тестов
 if(WITH_BOOST_TEST)
