@@ -27,34 +27,34 @@ Application::Application(size_t N_, IReaderPtr ir)
 	N = N_;
 }
 
-int BasicReader::read(std::string& str)
+ReadState BasicReader::read(std::string& str)
 {
 	getline(*stream, str);
 	if (stream->bad() || stream->eof())
 	{
-		return 1;
+		return ReadState::DONE;
 	}
-	return 0;
+	return ReadState::READY;
 }
 
-int YieldReader::read(std::string& str)
+ReadState YieldReader::read(std::string& str)
 {
 	getline(*stream, str);
 	if (stream->bad() || stream->eof())
 	{
-		return 2;
+		return ReadState::WAIT;
 	}
-	return 0; //will do that until terminate - we can wait for new data 
+	return ReadState::READY; //will do that until terminate - we can wait for new data 
 }
 
 void StaticState::processInput(Application *app)
 {
-	if(app->read_res == 1)
+	if(app->read_res == ReadState::DONE)
 	{
 		app->flushLogs();
 		return;
 	}
-	else if(app->read_res == 2)
+	else if(app->read_res == ReadState::WAIT)
 	{
 		buf = app->str;
 		return;
@@ -76,11 +76,11 @@ void StaticState::processInput(Application *app)
 
 void DynamicState::processInput(Application *app)
 {
-	if(app->read_res == 1)
+	if(app->read_res == ReadState::DONE)
 	{
 		return;
 	}
-	else if(app->read_res == 2)
+	else if(app->read_res == ReadState::WAIT)
 	{
 		buf = app->str;
 		return;

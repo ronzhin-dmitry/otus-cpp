@@ -46,7 +46,7 @@ public:
     DumbCommand(std::string cmd) : body(cmd) {};
     ~DumbCommand() {};
 };
-using ICommandPtr = std::unique_ptr<ICommand>;
+using ICommandPtr = std::shared_ptr<ICommand>;
 
 /**
  * @brief Virtual class for current state of parser (we model it with finite automaton)
@@ -67,11 +67,11 @@ class ILogger
 protected:
     std::string id = "";
 public:
-    virtual void log(const std::list<ICommandPtr> &) = 0;
+    virtual void log(std::list<ICommandPtr>) = 0;
     virtual ~ILogger() {};
     void set_id(std::string& i) { id = i;};
 };
-
+enum class ReadState{READY = 0, DONE = 1 , WAIT = 2};
 class IReader {
 protected:
     std::istream* stream;
@@ -79,7 +79,7 @@ protected:
     
 public:
     IReader(std::istream* s) : stream(s) {}
-    virtual int read(std::string& str) = 0;
+    virtual ReadState read(std::string& str) = 0;
     virtual void recieveString(std::string& str) = 0;
     virtual ~IReader() {}
 };
@@ -99,7 +99,7 @@ public:
         iss.str(s);  // Устанавливаем строку
     }
 
-    int read(std::string& str) override;
+    ReadState read(std::string& str) override;
 
     void recieveString(std::string& str) override {
         iss.str(str);
@@ -117,7 +117,7 @@ public:
         iss.str(s);
     }
 
-    int read(std::string& str) override;
+    ReadState read(std::string& str) override;
 
     void recieveString(std::string& str) override {
         iss.str(str);
@@ -125,7 +125,7 @@ public:
     }
 };
 
-using ILoggerPtr = std::unique_ptr<ILogger>;
+using ILoggerPtr = std::shared_ptr<ILogger>;
 using IReaderPtr = std::unique_ptr<IReader>;
 /**
  * @brief Base class for context of the automaton, allows for context switching based on states and inputs
@@ -141,7 +141,7 @@ private:
     size_t N; // max commands in static mode
 public:
     std::string str;
-    int read_res;
+    ReadState read_res;
     void setCurrentState(IStatePtr newState)
     {
         if (newState != curState)
@@ -155,26 +155,26 @@ public:
     Application(size_t N_, IReaderPtr ir);
     void runApp()
     {
-        read_res = 0;
-        while (curState != nullptr && read_res == 0)
+        read_res = ReadState::READY;
+        while (curState != nullptr && read_res == ReadState::READY)
         {
             read_res = reader->read(str);
             curState->processInput(this);
-            if(read_res > 1)
+            if(read_res == ReadState::WAIT)
                 break;
         }
     }
 
     void terminate()
     {
-        read_res = 1;
+        read_res = ReadState::DONE;
         curState->processInput(this);
         // TODO - consider additional logic
     }
 
     void subscribeLogger(ILoggerPtr &logger)
     {
-        loggers.emplace_back(std::move(logger));
+        loggers.push_back(logger);
     }
 
     void flushLogs()
@@ -201,7 +201,7 @@ public:
         //for the basic reader it will start and finish
         //for yield reader it will wait for new string or manual terminate
         reader->recieveString(str);
-        read_res = 0;
+        read_res = ReadState::READY;
         this->runApp();
     }
 };
@@ -224,7 +224,7 @@ public:
 class ConsoleLogger : public ILogger
 {
 public:
-    void log(const std::list<ICommandPtr> &comms)
+    void log(std::list<ICommandPtr> comms)
     {
         if(comms.size() == 0)
             return;
@@ -244,7 +244,7 @@ public:
 class FileLogger : public ILogger
 {
 public:
-    void log(const std::list<ICommandPtr> & comms)
+    void log(std::list<ICommandPtr> comms)
     {
         if(comms.size() == 0)
             return;
@@ -252,7 +252,7 @@ public:
         std::string random_id = std::to_string(randomNum);
         time_t tt = (*comms.begin())->getCreationTime();
         std::string createTime = std::to_string((long long)tt);
-        std::ofstream out(std::string("bulk") + createTime + "_" + random_id +"_" + id +".log");
+        std::ofstream out(std::string("bulk") + createTime + "_" + random_id + "_" + id +".log");
         for (auto it = comms.begin(); it != comms.end(); it++)
         {
             out << (*it)->serialize();
