@@ -36,6 +36,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: /home/runner/work/otus-cpp/otus-cpp/async-0.0.${{ github.run_number }}_amd64.deb
-          asset_name: async-0.0.${{ github.run_number }}_amd64.deb
+          asset_path: /home/runner/work/otus-cpp/otus-cpp/async_0.0.${{ github.run_number }}_amd64.deb
+          asset_name: async_0.0.${{ github.run_number }}_amd64.deb
           asset_content_type: application/vnd.debian.binary-package
