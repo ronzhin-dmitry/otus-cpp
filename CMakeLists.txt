@@ -44,6 +44,11 @@ set_target_properties(async PROPERTIES
 add_executable(bulk main.cpp)
 target_link_libraries(bulk PRIVATE async)
 
+find_package(Threads REQUIRED)
+
+target_link_libraries(async PRIVATE Threads::Threads)
+target_link_libraries(bulk PRIVATE Threads::Threads)
+
 # Установка
 install(TARGETS async
     LIBRARY DESTINATION lib
@@ -63,7 +68,7 @@ install(TARGETS bulk RUNTIME DESTINATION bin)
 if(WITH_BOOST_TEST)
     find_package(Boost COMPONENTS unit_test_framework REQUIRED)
     add_executable(test_version test_version.cpp)
-    target_link_libraries(test_version PRIVATE Boost::unit_test_framework async)
+    target_link_libraries(test_version PRIVATE Boost::unit_test_framework async Threads::Threads)
 endif()
 
 if(MSVC)
