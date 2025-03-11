@@ -14,6 +14,47 @@
  *
  * @return Program exit status
  */
+int main(int argc, char* argv[]) {
+    using namespace std;
+    try {
+        if (argc != 3) {
+            cerr << "Need three arguments" << endl;
+            return 1;
+        }
+
+        int port_tmp = stoi(argv[1]);
+        if (port_tmp < SHRT_MIN || port_tmp > SHRT_MAX) {
+            throw out_of_range("Not short");
+        }
+        short port = static_cast<short>(port_tmp);
+
+        int N = stoi(argv[2]);
+
+        //Creating server
+        boost::asio::io_context io_context;
+
+        //(Ctrl+C)
+        boost::asio::signal_set signals(io_context, SIGINT, SIGTERM);
+        signals.async_wait(
+            [&io_context](const boost::system::error_code&, int) {
+                cout << "\nShutting down server..." << endl;
+                io_context.stop(); // Остановка цикла обработки событий
+            });
+        asio_server::Server serv(io_context, port, N);
+        io_context.run();
+
+    } catch (const invalid_argument& e) {
+        cerr << "has to be int" << endl;
+        return 1;
+    } catch (const out_of_range& e) {
+        cerr << "error: " << e.what() << endl;
+        return 1;
+    }
+}
+
+
+//В прошлой версии было так:
+/*
 int main()
 {
     std::size_t bulk = 5;
@@ -28,9 +69,9 @@ int main()
 
     return 0;
 }
+*/
 
-
-//В прошлой версии кода запуск выполнялся так:
+//В поза-прошлой версии кода запуск выполнялся так:
 /*
 int main(int argc, char *argv[])
 {

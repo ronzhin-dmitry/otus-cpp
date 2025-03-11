@@ -8,7 +8,8 @@
 #include <ctime>
 #include <fstream>
 #include <sstream>
-
+#include <boost/asio.hpp>
+#include <mutex>
 /**
  * @brief simple function to return version of the release.
  */
@@ -124,9 +125,10 @@ public:
         iss.clear();
     }
 };
-
+class Application;
 using ILoggerPtr = std::shared_ptr<ILogger>;
 using IReaderPtr = std::unique_ptr<IReader>;
+using IAppPtr = std::shared_ptr<Application>;
 /**
  * @brief Base class for context of the automaton, allows for context switching based on states and inputs
  */
@@ -139,9 +141,12 @@ private:
     std::list<ICommandPtr> coms;
     std::list<ILoggerPtr> loggers;
     size_t N; // max commands in static mode
+    std::mutex coms_static_mtx;
+    IAppPtr master_app;
 public:
     std::string str;
     ReadState read_res;
+    IAppPtr getMaster() {return master_app;}
     void setCurrentState(IStatePtr newState)
     {
         if (newState != curState)
@@ -152,13 +157,16 @@ public:
     }
 
     Application(size_t N_);
-    Application(size_t N_, IReaderPtr ir);
+    Application(size_t N_, IReaderPtr ir, IAppPtr ma = nullptr);
+    Application(size_t N_, IStatePtr is, IReaderPtr ir, IAppPtr ma = nullptr);
     void runApp()
     {
         read_res = ReadState::READY;
         while (curState != nullptr && read_res == ReadState::READY)
         {
             read_res = reader->read(str);
+            //std::cout << "Read string: " << str << std::endl;
+            //std::cout << "Cur read res state " << int(read_res) << std::endl;
             curState->processInput(this);
             if(read_res == ReadState::WAIT)
                 break;
@@ -184,16 +192,25 @@ public:
         coms.clear();
     }
 
-    void staticPush(ICommandPtr &cmd)
+    void staticPush(ICommandPtr cmd)
     {
         coms.emplace_back(std::move(cmd));
         if (coms.size() == N)
             flushLogs();
     }
 
-    void dynamicPush(ICommandPtr &cmd)
+    void dynamicPush(ICommandPtr cmd)
     {
         coms.emplace_back(std::move(cmd));
+    }
+
+    void asyncStaticPush(ICommandPtr cmd)
+    {
+        std::lock_guard<std::mutex> guard(coms_static_mtx);
+        //std::cout << "In async push, recieved " << cmd->serialize() << std::endl;
+        coms.emplace_back(std::move(cmd));
+        if (coms.size() == N)
+            flushLogs();
     }
 
     void pushStringToReader(std::string& str)
@@ -209,7 +226,7 @@ public:
 class StaticState : public IState
 {
 public:
-    void processInput(Application *app);
+    void processInput(Application *);
     ~StaticState() {};
 };
 

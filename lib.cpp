@@ -20,12 +20,22 @@ Application::Application(size_t N_)
 	N = N_;
 }
 
-Application::Application(size_t N_, IReaderPtr ir)
+Application::Application(size_t N_, IReaderPtr ir, IAppPtr ma)
 {
 	curState = IStatePtr{new StaticState()};
 	reader = std::move(ir);
+	master_app = std::move(ma);
 	N = N_;
 }
+
+Application::Application(size_t N_, IStatePtr is, IReaderPtr ir, IAppPtr ma)
+{
+	curState = std::move(is);
+	reader = std::move(ir);
+	master_app = std::move(ma);
+	N = N_;
+}
+
 
 ReadState BasicReader::read(std::string& str)
 {

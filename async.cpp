@@ -179,3 +179,46 @@ void disconnect(handle_t h) {
 }
 
 }
+
+
+namespace asio_server
+{
+void SlaveStaticState::processInput(Application *app)
+{
+    //std::cout << "In slaveStatic, read state = " << int(app->read_res) << std::endl;
+    //std::cout << "cur app->str " << app->str << std::endl;
+	if (app->str == "{")
+	{
+        //std::cout << "changing state " << std::endl;
+		app->setCurrentState(IStatePtr{new SlaveDynamicState()});
+	}
+	else
+	{
+		ICommandPtr newComm(new DumbCommand(app->str));
+        auto ma = app->getMaster(); //the only major difference
+        if(ma != nullptr)
+		    ma->asyncStaticPush(newComm);
+	}
+	return;
+}
+
+void SlaveDynamicState::processInput(Application *app)
+{
+    //std::cout << "In dynamic state " << std::endl;
+	if (app->str == "{")
+		openCounter += 1;
+	else if (app->str == "}")
+		openCounter -= 1;
+	else
+	{
+		ICommandPtr newComm(new DumbCommand(app->str));
+		app->dynamicPush(newComm);
+	}
+	if(openCounter == 0)
+	{
+		app->flushLogs();
+		app->setCurrentState(IStatePtr{new SlaveStaticState()});
+	}
+	return;
+}
+}
