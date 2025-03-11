@@ -6,7 +6,7 @@ endif()
 
 set(PATCH_VERSION "1" CACHE INTERNAL "Patch version")
 set(PROJECT_VERSION 0.0.${PATCH_VERSION}) 
-project(async VERSION ${PROJECT_VERSION})
+project(bulk-async VERSION ${PROJECT_VERSION})
 
 # Явно указываем стандарт C++17 для всех целей
 set(CMAKE_CXX_STANDARD 17)
@@ -66,20 +66,25 @@ target_link_libraries(bulk PRIVATE
     Boost::system
 )
 
-# Установка
+# Установка компонентов
 install(TARGETS async
     LIBRARY DESTINATION lib
     ARCHIVE DESTINATION lib
     INCLUDES DESTINATION include
+    COMPONENT async
 )
 
 install(FILES
     lib.h
     async.h
     DESTINATION include/async
+    COMPONENT async
 )
 
-install(TARGETS bulk RUNTIME DESTINATION bin)
+install(TARGETS bulk 
+    RUNTIME DESTINATION bin
+    COMPONENT bulk
+)
 
 # Тесты
 if(WITH_BOOST_TEST)
@@ -101,11 +106,17 @@ endif()
 
 # Настройка CPack
 set(CPACK_PACKAGE_CONTACT "d.v.ronjin@gmail.com")
-set(CPACK_DEBIAN_PACKAGE_DEPENDS "libc6, libpthread-stubs0-dev")
-set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Async project for handling bulk operations")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Bulk async operations")
 set(CPACK_GENERATOR "DEB")
-set(CPACK_PACKAGE_NAME "async")
-set(CPACK_DEBIAN_FILE_NAME DEB-DEFAULT)
+set(CPACK_COMPONENTS_ALL async bulk)
+set(CPACK_DEB_COMPONENT_INSTALL ON)
+
+# Настройка имен и зависимостей пакетов
+set(CPACK_DEBIAN_ASYNC_FILE_NAME "async_${PROJECT_VERSION}_amd64.deb")
+set(CPACK_DEBIAN_BULK_FILE_NAME "bulk_${PROJECT_VERSION}_amd64.deb")
+set(CPACK_DEBIAN_ASYNC_PACKAGE_DEPENDS "libc6, libboost-system-dev")
+set(CPACK_DEBIAN_BULK_PACKAGE_DEPENDS "libc6, libboost-system-dev, async (= ${PROJECT_VERSION})")
+
 include(CPack)
 
 # Включение тестов

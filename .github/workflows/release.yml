@@ -10,32 +10,68 @@ jobs:
   build:
     runs-on: ubuntu-20.04
     permissions: write-all
+
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
         with:
           submodules: true
-      - run: sudo apt-get update && sudo apt-get install libboost-test-dev -y
-      - run: cmake . -DPATCH_VERSION=${{ github.run_number }} -DWITH_BOOST_TEST=ON
-      - run: cmake --build .
-      - run: cmake --build . --target test
-      - run: cmake --build . --target package
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libboost-system-dev \
+            libboost-test-dev \
+            libboost-program-options-dev \
+            build-essential \
+            cmake \
+            dpkg-dev
+
+      - name: Configure CMake
+        run: |
+          cmake . \
+            -DBOOST_ROOT=/usr/lib/x86_64-linux-gnu \
+            -DPATCH_VERSION=${{ github.run_number }} \
+            -DWITH_BOOST_TEST=ON
+
+      - name: Build
+        run: |
+          cmake --build . --config Release
+
+      - name: Run tests
+        run: ctest --output-on-failure
+
+      - name: Create packages
+        run: |
+          cmake --build . --target package
+
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ github.run_number }}
-          release_name: Release ${{ github.run_number }}
+          tag_name: v0.0.${{ github.run_number }}
+          release_name: Release v0.0.${{ github.run_number }}
           draft: false
           prerelease: false
-      - name: Upload Release Asset
-        id: upload-release-asset
+
+      - name: Upload Async DEB
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: /home/runner/work/otus-cpp/otus-cpp/async_0.0.${{ github.run_number }}_amd64.deb
+          asset_path: ./async_0.0.${{ github.run_number }}_amd64.deb
           asset_name: async_0.0.${{ github.run_number }}_amd64.deb
+          asset_content_type: application/vnd.debian.binary-package
+
+      - name: Upload Bulk DEB
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./bulk_0.0.${{ github.run_number }}_amd64.deb
+          asset_name: bulk_0.0.${{ github.run_number }}_amd64.deb
           asset_content_type: application/vnd.debian.binary-package
