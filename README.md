@@ -185,13 +185,13 @@ join_server <port>
 
 ## Проверка асинхронности
 
-'''
+```
 ./build/join_server 100
-'''
+```
 
 и в bash запустить команду:
 
-'''
+```
 # Отправка 150 INSERT A (id 0-149) и 101 INSERT B (id 200-0 с шагом -2)
 # Команды TRUNCATE будут перемешаны в общем потоке
 
@@ -210,12 +210,12 @@ done
 (echo "TRUNCATE B" | nc localhost 100) &  # Исправлено: было "TRUNCATE B"
 
 wait
-'''
+```
 
 Примерные выводы после запуска:
 
-'''
 
+```
 echo "INTERSECTION" | nc localhost 100 
 76,6626ef,be8bc1
 78,bf3600,fc0944
@@ -255,9 +255,9 @@ echo "INTERSECTION" | nc localhost 100
 146,7c3d6f,5f8000
 148,2b9706,4f7c02
 OK
-'''
+```
 
-'''
+```
 echo "SYMMETRIC_DIFFERENCE" | nc localhost 100 
 75,8d79b7,
 77,72501c,
@@ -411,4 +411,4 @@ echo "SYMMETRIC_DIFFERENCE" | nc localhost 100
 296,,5b97b9
 298,,f2a7bd
 OK
-'''
+```
