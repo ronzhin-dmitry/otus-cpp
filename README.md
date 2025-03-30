@@ -192,24 +192,20 @@ join_server <port>
 и в bash запустить команду:
 
 ```
-# Отправка 150 INSERT A (id 0-149) и 101 INSERT B (id 200-0 с шагом -2)
-# Команды TRUNCATE будут перемешаны в общем потоке
-
-# Все INSERT A (прямой порядок)
-for i in {0..149}; do 
-  (echo "INSERT A $i $(openssl rand -hex 3)" | nc localhost 100) &
-done
-
-# Все INSERT B (обратный порядок 200 → 0 с шагом 2)
-for i in $(seq 200 -2 0); do  # Изменено здесь!
-  (echo "INSERT B $i $(openssl rand -hex 3)" | nc localhost 100) &
-done
-
-# TRUNCATE
-(echo "TRUNCATE A" | nc localhost 100) &
-(echo "TRUNCATE B" | nc localhost 100) &  # Исправлено: было "TRUNCATE B"
-
-wait
+{
+  # Первые 75 INSERT A
+  for i in {0..74}; do echo "INSERT A $i $(openssl rand -hex 3)"; done
+  
+  # TRUNCATE
+  echo "TRUNCATE A"
+  echo "TRUNCATE B"
+  
+  # Остальные 75 INSERT A
+  for i in {75..149}; do echo "INSERT A $i $(openssl rand -hex 3)"; done
+  
+  # Все INSERT B (параллельно с A)
+  for i in $(seq 0 2 298); do echo "INSERT B $i $(openssl rand -hex 3)"; done
+} | nc localhost 100
 ```
 
 Примерные выводы после запуска:
