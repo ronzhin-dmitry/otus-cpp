@@ -27,7 +27,7 @@ namespace database
 				res += to_string(it->first) + "," + it->second + "," + it2->second + "\n"; 
 		}
 		return res + string("OK\n");
-	};
+	}
 
     string Database::symmetric_difference()
 	{
@@ -46,21 +46,21 @@ namespace database
 				res += to_string(it->first) + ",," + it->second + "\n"; 
 		}
 		return res + string("OK\n");
-	};
+	}
     
 	string Database::truncate_A()
 	{
 		unique_lock lock(mtx);
 		table_A.clear();
 		return string("OK\n");
-	};
+	}
     
 	string Database::truncate_B()
 	{
 		unique_lock lock(mtx);
 		table_B.clear();
 		return string("OK\n");
-	};
+	}
 
 	string Database::insert_A(int id, string val)
 	{
@@ -69,7 +69,7 @@ namespace database
 			return string("ERR duplicate ") + to_string(id) + "\n"; 
 		table_A[id] = val;
 		return string("OK\n");
-	};
+	}
     
 	string Database::insert_B(int id, string val)
 	{
@@ -78,7 +78,7 @@ namespace database
 			return string("ERR duplicate ") + to_string(id) + "\n"; 
 		table_B[id] = val;
 		return string("OK\n");
-	};
+	}
 
 	string Database::execute(string message)
 	{
