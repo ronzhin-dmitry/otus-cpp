@@ -6,7 +6,7 @@ endif()
 
 set(PATCH_VERSION "1" CACHE INTERNAL "Patch version")
 set(PROJECT_VERSION 0.0.${PATCH_VERSION}) 
-project(bulk-async VERSION ${PROJECT_VERSION})
+project(join_server VERSION ${PROJECT_VERSION})
 
 # Явно указываем стандарт C++17 для всех целей
 set(CMAKE_CXX_STANDARD 17)
@@ -27,15 +27,13 @@ find_package(Boost REQUIRED COMPONENTS ${BOOST_COMPONENTS})
 configure_file(version.h.in version.h)
 
 # Создание shared-библиотеки
-add_library(async SHARED
+add_library(lib_join_server SHARED
     lib.cpp
     lib.h
-    async.cpp
-    async.h
 )
 
 # Установка свойств библиотеки
-target_include_directories(async
+target_include_directories(lib_join_server
     PUBLIC 
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
         $<INSTALL_INTERFACE:include>
@@ -43,47 +41,46 @@ target_include_directories(async
         ${CMAKE_BINARY_DIR}
 )
 
-set_target_properties(async PROPERTIES
+set_target_properties(lib_join_server PROPERTIES
     SOVERSION ${PROJECT_VERSION}
     VERSION ${PROJECT_VERSION}
-    OUTPUT_NAME "async"
+    OUTPUT_NAME "join_server"
 )
 
 # Исполняемый файл
-add_executable(bulk main.cpp)
-target_link_libraries(bulk PRIVATE async)
+add_executable(join_server main.cpp)
+target_link_libraries(join_server PRIVATE lib_join_server)
 
 find_package(Threads REQUIRED)
 
 # Линковка с Boost и Threads
-target_link_libraries(async PRIVATE 
+target_link_libraries(lib_join_server PRIVATE 
     Threads::Threads 
     Boost::system
 )
 
-target_link_libraries(bulk PRIVATE 
+target_link_libraries(join_server PRIVATE 
     Threads::Threads 
     Boost::system
 )
 
 # Установка компонентов
-install(TARGETS async
+install(TARGETS lib_join_server
     LIBRARY DESTINATION lib
     ARCHIVE DESTINATION lib
     INCLUDES DESTINATION include
-    COMPONENT async
+    COMPONENT lib_join_server
 )
 
 install(FILES
     lib.h
-    async.h
-    DESTINATION include/async
-    COMPONENT async
+    DESTINATION include/join_server
+    COMPONENT lib_join_server
 )
 
-install(TARGETS bulk 
+install(TARGETS join_server 
     RUNTIME DESTINATION bin
-    COMPONENT bulk
+    COMPONENT join_server
 )
 
 # Тесты
@@ -91,31 +88,31 @@ if(WITH_BOOST_TEST)
     add_executable(test_version test_version.cpp)
     target_link_libraries(test_version PRIVATE 
         Boost::unit_test_framework 
-        async 
+        lib_join_server 
         Threads::Threads
     )
 endif()
 
 if(MSVC)
-    target_compile_options(async PRIVATE /W4)
-    target_compile_options(bulk PRIVATE /W4)
+    target_compile_options(lib_join_server PRIVATE /W4)
+    target_compile_options(join_server PRIVATE /W4)
 else()
-    target_compile_options(async PRIVATE -Wall -Wextra -pedantic -Werror)
-    target_compile_options(bulk PRIVATE -Wall -Wextra -pedantic -Werror)
+    target_compile_options(lib_join_server PRIVATE -Wall -Wextra -pedantic -Werror)
+    target_compile_options(join_server PRIVATE -Wall -Wextra -pedantic -Werror)
 endif()
 
 # Настройка CPack
 set(CPACK_PACKAGE_CONTACT "d.v.ronjin@gmail.com")
-set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Bulk async operations")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Join Server Application")
 set(CPACK_GENERATOR "DEB")
-set(CPACK_COMPONENTS_ALL async bulk)
+set(CPACK_COMPONENTS_ALL lib_join_server join_server)
 set(CPACK_DEB_COMPONENT_INSTALL ON)
 
 # Настройка имен и зависимостей пакетов
-set(CPACK_DEBIAN_ASYNC_FILE_NAME "async_${PROJECT_VERSION}_amd64.deb")
-set(CPACK_DEBIAN_BULK_FILE_NAME "bulk_${PROJECT_VERSION}_amd64.deb")
-set(CPACK_DEBIAN_ASYNC_PACKAGE_DEPENDS "libc6, libboost-system-dev")
-set(CPACK_DEBIAN_BULK_PACKAGE_DEPENDS "libc6, libboost-system-dev, async (= ${PROJECT_VERSION})")
+set(CPACK_DEBIAN_LIB_JOIN_SERVER_FILE_NAME "lib_join_server_${PROJECT_VERSION}_amd64.deb")
+set(CPACK_DEBIAN_JOIN_SERVER_FILE_NAME "join_server_${PROJECT_VERSION}_amd64.deb")
+set(CPACK_DEBIAN_LIB_JOIN_SERVER_PACKAGE_DEPENDS "libc6, libboost-system-dev")
+set(CPACK_DEBIAN_JOIN_SERVER_PACKAGE_DEPENDS "libc6, libboost-system-dev, lib_join_server (= ${PROJECT_VERSION})")
 
 include(CPack)
 

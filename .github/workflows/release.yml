@@ -56,22 +56,22 @@ jobs:
           draft: false
           prerelease: false
 
-      - name: Upload Async DEB
+      - name: Upload Library DEB
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./async_0.0.${{ github.run_number }}_amd64.deb
-          asset_name: async_0.0.${{ github.run_number }}_amd64.deb
+          asset_path: ./lib_join_server_0.0.${{ github.run_number }}_amd64.deb
+          asset_name: lib_join_server_0.0.${{ github.run_number }}_amd64.deb
           asset_content_type: application/vnd.debian.binary-package
 
-      - name: Upload Bulk DEB
+      - name: Upload Join Server DEB
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./bulk_0.0.${{ github.run_number }}_amd64.deb
-          asset_name: bulk_0.0.${{ github.run_number }}_amd64.deb
+          asset_path: ./join_server_0.0.${{ github.run_number }}_amd64.deb
+          asset_name: join_server_0.0.${{ github.run_number }}_amd64.deb
           asset_content_type: application/vnd.debian.binary-package

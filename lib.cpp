@@ -13,103 +13,119 @@ int version()
 	return PROJECT_VERSION_PATCH;
 }
 
-Application::Application(size_t N_)
+namespace database
 {
-	curState = IStatePtr{new StaticState()};
-	reader = IReaderPtr{new BasicReader()};
-	N = N_;
+    using namespace std;
+    string Database::intersection()
+	{
+		shared_lock lock(mtx);
+		string res = "";
+		for(auto it = table_A.begin(); it != table_A.end(); it++)
+		{
+			auto it2 = table_B.find(it->first);
+			if(it2 != table_B.end())
+				res += to_string(it->first) + "," + it->second + "," + it2->second + "\n"; 
+		}
+		return res + string("OK\n");
+	};
+
+    string Database::symmetric_difference()
+	{
+		shared_lock lock(mtx);
+		string res = "";
+		for(auto it = table_A.begin(); it != table_A.end(); it++)
+		{
+			auto it2 = table_B.find(it->first);
+			if(it2 == table_B.end())
+				res += to_string(it->first) + "," + it->second + ",\n"; 
+		}
+		for(auto it = table_B.begin(); it != table_B.end(); it++)
+		{
+			auto it2 = table_A.find(it->first);
+			if(it2 == table_A.end())
+				res += to_string(it->first) + ",," + it->second + "\n"; 
+		}
+		return res + string("OK\n");
+	};
+    
+	string Database::truncate_A()
+	{
+		unique_lock lock(mtx);
+		table_A.clear();
+		return string("OK\n");
+	};
+    
+	string Database::truncate_B()
+	{
+		unique_lock lock(mtx);
+		table_B.clear();
+		return string("OK\n");
+	};
+
+	string Database::insert_A(int id, string val)
+	{
+		unique_lock lock(mtx);
+		if(table_A.find(id) != table_A.end())
+			return string("ERR duplicate ") + to_string(id) + "\n"; 
+		table_A[id] = val;
+		return string("OK\n");
+	};
+    
+	string Database::insert_B(int id, string val)
+	{
+		unique_lock lock(mtx);
+		if(table_B.find(id) != table_B.end())
+			return string("ERR duplicate ") + to_string(id) + "\n"; 
+		table_B[id] = val;
+		return string("OK\n");
+	};
+
+	string Database::execute(string message)
+	{
+		//TODO: separate command parser may be considered - currently overkill
+		//Currently all parsing logic is here
+		//No tolerance for incorrect spacing in commands
+		if(message.substr(0,6) == "INSERT")
+		{
+			if(message.substr(7,1) == "A")
+			{
+				auto end_pos = message.find(" ",9);
+				if(end_pos == string::npos)
+					return "ERR unknown command\n";
+				return insert_A(stoi(message.substr(9, end_pos)), message.substr(end_pos+1, message.size()));
+			}
+			else if(message.substr(7, 1) == "B")
+			{
+				auto end_pos = message.find(" ",9);
+				if(end_pos == string::npos)
+					return "ERR unknown command\n";
+				return insert_B(stoi(message.substr(9, end_pos)), message.substr(end_pos+1, message.size()));
+			}
+		}
+		else if(message.substr(0,8) == "TRUNCATE")
+		{
+			if(message.substr(9,1) == "A")
+			{
+				return truncate_A();
+			}
+			else if(message.substr(9, 1) == "B")
+			{
+				return truncate_B();
+			}
+		}
+		else if(message == "INTERSECTION")
+		{
+			return intersection();
+		}
+		else if(message == "SYMMETRIC_DIFFERENCE")
+		{
+			return symmetric_difference();
+		}
+		return "ERR unknown command - " + message + "\n";
+	}
 }
 
-Application::Application(size_t N_, IReaderPtr ir, IAppPtr ma)
+namespace join_server
 {
-	curState = IStatePtr{new StaticState()};
-	reader = std::move(ir);
-	master_app = std::move(ma);
-	N = N_;
-}
-
-Application::Application(size_t N_, IStatePtr is, IReaderPtr ir, IAppPtr ma)
-{
-	curState = std::move(is);
-	reader = std::move(ir);
-	master_app = std::move(ma);
-	N = N_;
-}
-
-
-ReadState BasicReader::read(std::string& str)
-{
-	getline(*stream, str);
-	if (stream->bad() || stream->eof())
-	{
-		return ReadState::DONE;
-	}
-	return ReadState::READY;
-}
-
-ReadState YieldReader::read(std::string& str)
-{
-	getline(*stream, str);
-	if (stream->bad() || stream->eof())
-	{
-		return ReadState::WAIT;
-	}
-	return ReadState::READY; //will do that until terminate - we can wait for new data 
-}
-
-void StaticState::processInput(Application *app)
-{
-	if(app->read_res == ReadState::DONE)
-	{
-		app->flushLogs();
-		return;
-	}
-	else if(app->read_res == ReadState::WAIT)
-	{
-		buf = app->str;
-		return;
-	}
-	app->str = buf + app->str;
-	buf = "";
-	if (app->str == "{")
-	{
-		app->flushLogs();
-		app->setCurrentState(IStatePtr{new DynamicState()});
-	}
-	else
-	{
-		ICommandPtr newComm(new DumbCommand(app->str));
-		app->staticPush(newComm);
-	}
-	return;
-}
-
-void DynamicState::processInput(Application *app)
-{
-	if(app->read_res == ReadState::DONE)
-	{
-		return;
-	}
-	else if(app->read_res == ReadState::WAIT)
-	{
-		buf = app->str;
-		return;
-	}
-	app->str = buf + app->str;
-	buf = "";
-	if (app->str == "{")
-		openCounter += 1;
-	else if (app->str == "}")
-		openCounter -= 1;
-	else
-	{
-		ICommandPtr newComm(new DumbCommand(app->str));
-		app->dynamicPush(newComm);
-	}
-	if(openCounter == 0)
-	{
-		app->flushLogs();
-		app->setCurrentState(IStatePtr{new StaticState()});
-	}
-	return;
+	
 }
