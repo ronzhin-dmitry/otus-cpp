@@ -62,8 +62,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./lib_join_server_0.0.${{ github.run_number }}_amd64.deb
-          asset_name: lib_join_server_0.0.${{ github.run_number }}_amd64.deb
+          asset_path: ./lib_mci_server_0.0.${{ github.run_number }}_amd64.deb
+          asset_name: lib_mci_server_0.0.${{ github.run_number }}_amd64.deb
           asset_content_type: application/vnd.debian.binary-package
 
       - name: Upload Monte Carlo Integration Server DEB
