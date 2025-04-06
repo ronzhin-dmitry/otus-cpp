@@ -29,7 +29,8 @@ namespace monte_carlo_multithread
             double b;
             size_t points_per_worker;
             std::atomic<size_t> remaining_workers;
-            std::atomic<double> result;
+            double result; 
+            std::mutex result_mutex; 
         };
 
     class Integrator

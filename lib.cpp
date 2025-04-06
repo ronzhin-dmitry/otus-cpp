@@ -36,7 +36,10 @@ namespace monte_carlo_multithread
         for (size_t i = 0; i < num_workers; ++i) {
             post(tpool_, [this, task, fquery, remaining_workers, mtx, cv]() {
                 double partial_sum = calculate_partial_sum(task->a, task->b, task->points_per_worker, fquery);
-                task->result.fetch_add(partial_sum); 
+                {
+                    std::lock_guard<std::mutex> lock(task->result_mutex);
+                    task->result += partial_sum;
+                }
                 if (--(*remaining_workers) == 0) {
                     std::lock_guard<std::mutex> lock(*mtx);
                     cv->notify_one();
