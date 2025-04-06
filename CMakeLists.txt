@@ -6,7 +6,7 @@ endif()
 
 set(PATCH_VERSION "1" CACHE INTERNAL "Patch version")
 set(PROJECT_VERSION 0.0.${PATCH_VERSION}) 
-project(monte_carlo_int VERSION ${PROJECT_VERSION})
+project(mci_server VERSION ${PROJECT_VERSION})
 
 # Явно указываем стандарт C++20 для всех целей
 set(CMAKE_CXX_STANDARD 20)
@@ -27,13 +27,13 @@ find_package(Boost REQUIRED COMPONENTS ${BOOST_COMPONENTS})
 configure_file(version.h.in version.h)
 
 # Создание shared-библиотеки
-add_library(lib_monte_carlo_int SHARED
+add_library(lib_mci_server SHARED
     lib.cpp
     lib.h
 )
 
 # Установка свойств библиотеки
-target_include_directories(lib_monte_carlo_int
+target_include_directories(lib_mci_server
     PUBLIC 
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
         $<INSTALL_INTERFACE:include>
@@ -41,46 +41,46 @@ target_include_directories(lib_monte_carlo_int
         ${CMAKE_BINARY_DIR}
 )
 
-set_target_properties(lib_monte_carlo_int PROPERTIES
+set_target_properties(lib_mci_server PROPERTIES
     SOVERSION ${PROJECT_VERSION}
     VERSION ${PROJECT_VERSION}
-    OUTPUT_NAME "monte_carlo_int"
+    OUTPUT_NAME "mci_server"
 )
 
 # Исполняемый файл
-add_executable(monte_carlo_int main.cpp)
-target_link_libraries(monte_carlo_int PRIVATE lib_monte_carlo_int)
+add_executable(mci_server main.cpp)
+target_link_libraries(mci_server PRIVATE lib_mci_server)
 
 find_package(Threads REQUIRED)
 
 # Линковка с Boost и Threads
-target_link_libraries(lib_monte_carlo_int PRIVATE 
+target_link_libraries(lib_mci_server PRIVATE 
     Threads::Threads 
     Boost::system
 )
 
-target_link_libraries(monte_carlo_int PRIVATE 
+target_link_libraries(mci_server PRIVATE 
     Threads::Threads 
     Boost::system
 )
 
 # Установка компонентов
-install(TARGETS lib_monte_carlo_int
+install(TARGETS lib_mci_server
     LIBRARY DESTINATION lib
     ARCHIVE DESTINATION lib
     INCLUDES DESTINATION include
-    COMPONENT lib_monte_carlo_int
+    COMPONENT lib_mci_server
 )
 
 install(FILES
     lib.h
-    DESTINATION include/monte_carlo_int
-    COMPONENT lib_monte_carlo_int
+    DESTINATION include/mci_server
+    COMPONENT lib_mci_server
 )
 
-install(TARGETS monte_carlo_int 
+install(TARGETS mci_server 
     RUNTIME DESTINATION bin
-    COMPONENT monte_carlo_int
+    COMPONENT mci_server
 )
 
 # Тесты
@@ -88,31 +88,31 @@ if(WITH_BOOST_TEST)
     add_executable(test_version test_version.cpp)
     target_link_libraries(test_version PRIVATE 
         Boost::unit_test_framework 
-        lib_monte_carlo_int 
+        lib_mci_server 
         Threads::Threads
     )
 endif()
 
 if(MSVC)
-    target_compile_options(lib_monte_carlo_int PRIVATE /W4)
-    target_compile_options(monte_carlo_int PRIVATE /W4)
+    target_compile_options(lib_mci_server PRIVATE /W4)
+    target_compile_options(mci_server PRIVATE /W4)
 else()
-    target_compile_options(lib_monte_carlo_int PRIVATE -Wall -Wextra -pedantic -Werror)
-    target_compile_options(monte_carlo_int PRIVATE -Wall -Wextra -pedantic -Werror)
+    target_compile_options(lib_mci_server PRIVATE -Wall -Wextra -pedantic -Werror)
+    target_compile_options(mci_server PRIVATE -Wall -Wextra -pedantic -Werror)
 endif()
 
 # Настройка CPack
 set(CPACK_PACKAGE_CONTACT "d.v.ronjin@gmail.com")
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Monte Carlo Integration Server Application")
 set(CPACK_GENERATOR "DEB")
-set(CPACK_COMPONENTS_ALL lib_monte_carlo_int monte_carlo_int)
+set(CPACK_COMPONENTS_ALL lib_mci_server mci_server)
 set(CPACK_DEB_COMPONENT_INSTALL ON)
 
 # Настройка имен и зависимостей пакетов
-set(CPACK_DEBIAN_LIB_monte_carlo_int_FILE_NAME "lib_monte_carlo_int_${PROJECT_VERSION}_amd64.deb")
-set(CPACK_DEBIAN_monte_carlo_int_FILE_NAME "monte_carlo_int_${PROJECT_VERSION}_amd64.deb")
-set(CPACK_DEBIAN_LIB_monte_carlo_int_PACKAGE_DEPENDS "libc6, libboost-system-dev")
-set(CPACK_DEBIAN_monte_carlo_int_PACKAGE_DEPENDS "libc6, libboost-system-dev, lib_monte_carlo_int (= ${PROJECT_VERSION})")
+set(CPACK_DEBIAN_LIB_mci_server_FILE_NAME "lib_mci_server_${PROJECT_VERSION}_amd64.deb")
+set(CPACK_DEBIAN_mci_server_FILE_NAME "mci_server_${PROJECT_VERSION}_amd64.deb")
+set(CPACK_DEBIAN_LIB_mci_server_PACKAGE_DEPENDS "libc6, libboost-system-dev")
+set(CPACK_DEBIAN_mci_server_PACKAGE_DEPENDS "libc6, libboost-system-dev, lib_mci_server (= ${PROJECT_VERSION})")
 
 include(CPack)
 
