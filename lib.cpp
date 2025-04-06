@@ -3,6 +3,7 @@
 */
 #include "lib.h"
 #include "version.h"
+#include <random>
 
 /**
  * @brief function to produce release version in github workflows
@@ -10,122 +11,58 @@
  */
 int version()
 {
-	return PROJECT_VERSION_PATCH;
+    return PROJECT_VERSION_PATCH;
 }
 
-namespace database
+namespace monte_carlo_multithread
 {
     using namespace std;
-    string Database::intersection()
-	{
-		shared_lock lock(mtx);
-		string res = "";
-		for(auto it = table_A.begin(); it != table_A.end(); it++)
-		{
-			auto it2 = table_B.find(it->first);
-			if(it2 != table_B.end())
-				res += to_string(it->first) + "," + it->second + "," + it2->second + "\n"; 
-		}
-		return res + string("OK\n");
-	}
-
-    string Database::symmetric_difference()
-	{
-		shared_lock lock(mtx);
-		string res = "";
-		for(auto it = table_A.begin(); it != table_A.end(); it++)
-		{
-			auto it2 = table_B.find(it->first);
-			if(it2 == table_B.end())
-				res += to_string(it->first) + "," + it->second + ",\n"; 
-		}
-		for(auto it = table_B.begin(); it != table_B.end(); it++)
-		{
-			auto it2 = table_A.find(it->first);
-			if(it2 == table_A.end())
-				res += to_string(it->first) + ",," + it->second + "\n"; 
-		}
-		return res + string("OK\n");
-	}
+    string Integrator::execute(string query)
+    {
+        string res = "";
+        //TODO
+        return query;
+    }
+    string Integrator::execute(function<double(double)> fquery, double a, double b, size_t num_points, size_t num_workers) {
+        if (num_workers == 0 || num_workers > max_nworkers_) {
+            num_workers = max_nworkers_;
+        }
+        auto task = std::make_shared<MonteCarloTask>(a, b, num_points, num_workers);
     
-	string Database::truncate_A()
-	{
-		unique_lock lock(mtx);
-		table_A.clear();
-		return string("OK\n");
-	}
+        std::shared_ptr<std::atomic<size_t>> remaining_workers = std::make_shared<std::atomic<size_t>>(num_workers);
+        std::shared_ptr<std::mutex> mtx = std::make_shared<std::mutex>();
+        std::shared_ptr<std::condition_variable> cv = std::make_shared<std::condition_variable>();
     
-	string Database::truncate_B()
-	{
-		unique_lock lock(mtx);
-		table_B.clear();
-		return string("OK\n");
-	}
-
-	string Database::insert_A(int id, string val)
-	{
-		unique_lock lock(mtx);
-		if(table_A.find(id) != table_A.end())
-			return string("ERR duplicate ") + to_string(id) + "\n"; 
-		table_A[id] = val;
-		return string("OK\n");
-	}
+        for (size_t i = 0; i < num_workers; ++i) {
+            post(tpool_, [this, task, fquery, remaining_workers, mtx, cv]() {
+                double partial_sum = calculate_partial_sum(task->a, task->b, task->points_per_worker, fquery);
+                task->result.fetch_add(partial_sum); 
+                if (--(*remaining_workers) == 0) {
+                    std::lock_guard<std::mutex> lock(*mtx);
+                    cv->notify_one();
+                }
+            });
+        }
     
-	string Database::insert_B(int id, string val)
-	{
-		unique_lock lock(mtx);
-		if(table_B.find(id) != table_B.end())
-			return string("ERR duplicate ") + to_string(id) + "\n"; 
-		table_B[id] = val;
-		return string("OK\n");
-	}
+        std::unique_lock<std::mutex> lock(*mtx);
+        cv->wait(lock, [remaining_workers]() { return *remaining_workers == 0; });
+    
+        double res = task->result * (b - a) / num_points;
+        return to_string(res);
+    }
 
-	string Database::execute(string message)
-	{
-		//TODO: separate command parser may be considered - currently overkill
-		//Currently all parsing logic is here
-		//No tolerance for incorrect spacing in commands
-		if(message.substr(0,6) == "INSERT")
-		{
-			if(message.substr(7,1) == "A")
-			{
-				auto end_pos = message.find(" ",9);
-				if(end_pos == string::npos)
-					return "ERR unknown command\n";
-				return insert_A(stoi(message.substr(9, end_pos)), message.substr(end_pos+1, message.size()));
-			}
-			else if(message.substr(7, 1) == "B")
-			{
-				auto end_pos = message.find(" ",9);
-				if(end_pos == string::npos)
-					return "ERR unknown command\n";
-				return insert_B(stoi(message.substr(9, end_pos)), message.substr(end_pos+1, message.size()));
-			}
-		}
-		else if(message.substr(0,8) == "TRUNCATE")
-		{
-			if(message.substr(9,1) == "A")
-			{
-				return truncate_A();
-			}
-			else if(message.substr(9, 1) == "B")
-			{
-				return truncate_B();
-			}
-		}
-		else if(message == "INTERSECTION")
-		{
-			return intersection();
-		}
-		else if(message == "SYMMETRIC_DIFFERENCE")
-		{
-			return symmetric_difference();
-		}
-		return "ERR unknown command - " + message + "\n";
-	}
-}
-
-namespace join_server
-{
-	
+    double Integrator::calculate_partial_sum(double a, double b, size_t points, function<double(double)> fquery) {
+        std::random_device rd;
+        std::mt19937 gen(rd());
+        std::uniform_real_distribution<> x_dist(a, b);
+        
+        double partial_sum = 0;
+        for (size_t i = 0; i < points; ++i) {
+                double x = x_dist(gen);
+                double y = fquery(x); 
+                partial_sum += y;
+            }
+        
+        return partial_sum;
+    }
 }

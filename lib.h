@@ -15,34 +15,51 @@
  */
 int version();
 
-namespace database
+namespace monte_carlo_multithread
 {
     using namespace std;
-    class Database
+    using namespace boost::asio;
+    class MonteCarloTask {
+        public:
+            MonteCarloTask(double a, double b, size_t total_points, size_t num_workers)
+                : a(a), b(b), points_per_worker(total_points / num_workers),
+                  remaining_workers(num_workers), result(0.0) {}
+        
+            double a;
+            double b;
+            size_t points_per_worker;
+            std::atomic<size_t> remaining_workers;
+            std::atomic<double> result;
+        };
+
+    class Integrator
     {
         private:
-            map<int, string> table_A;
-            map<int, string> table_B;
-            shared_mutex mtx;
-            string intersection();
-            string symmetric_difference();
-            string insert_A(int id, string val);
-            string insert_B(int id, string val);
-            string truncate_A();
-            string truncate_B();
+            thread_pool tpool_;
+            size_t max_nworkers_;
+            double calculate_partial_sum(double a, double b, size_t points, function<double(double)> fquery);
         public:
-            string execute(string command);
+            explicit Integrator(size_t nworkers = 0) 
+                : tpool_(nworkers ? nworkers : std::thread::hardware_concurrency()),
+                max_nworkers_(nworkers ? nworkers : std::thread::hardware_concurrency()) 
+            {}
+
+            Integrator(const Integrator&) = delete;
+            Integrator& operator=(const Integrator&) = delete;
+            string execute(string query);
+            string execute(function<double(double)> fquery, double a, double b, size_t num_points, size_t num_workers = 0);
     };
 }
 
-namespace join_server
+namespace monte_carlo_server
 {
     using boost::asio::ip::tcp;
+    using namespace monte_carlo_multithread;
     // Класс для обработки соединения
     class Session : public std::enable_shared_from_this<Session> {
     public:
-        Session(tcp::socket socket, database::Database &db_)
-            : socket_(std::move(socket)), db(db_){}
+        Session(tcp::socket socket, Integrator& mci)
+            : socket_(std::move(socket)), mci_(mci){}
         
         void start() {
             read_message();
@@ -68,9 +85,9 @@ namespace join_server
                         std::string response = "";
                         
                         if(length != 0)
-                            response = db.execute(message);
+                            response = mci_.execute(message);
                         else
-                            response = db.execute(message); //TODO: maybe later add different logic
+                            response = mci_.execute(message); //TODO: maybe later add different logic
                         
                         // Асинхронная отправка ответа
                         boost::asio::async_write(socket_, 
@@ -88,12 +105,12 @@ namespace join_server
 
         tcp::socket socket_;
         boost::asio::streambuf buffer_;
-        database::Database &db;
+        Integrator &mci_;
     };
 
     class Server {
     public:
-        database::Database db;
+        Integrator mci_;
         Server(boost::asio::io_context& io_context, short port)
             : acceptor_(io_context, tcp::endpoint(tcp::v4(), port)) {
             accept_connection();
@@ -104,7 +121,7 @@ namespace join_server
             acceptor_.async_accept(
                 [this](boost::system::error_code ec, tcp::socket socket) {
                     if (!ec) {
-                        std::make_shared<Session>(std::move(socket), db)->start();
+                        std::make_shared<Session>(std::move(socket), std::ref(mci_))->start();
                     }
                     accept_connection();
                 });
@@ -112,4 +129,4 @@ namespace join_server
 
         tcp::acceptor acceptor_;
     };
-} // namespace join_server
+} // namespace monte_carlo_server

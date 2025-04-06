@@ -16,6 +16,31 @@
  */
 int main(int argc, char* argv[]) {
     using namespace std;
+    using namespace monte_carlo_server;
+    using namespace monte_carlo_multithread;
+
+    Integrator integrator;
+    // Интеграл sin(x) от 0 до π (ожидаемый результат: 2.0)
+    auto result = integrator.execute(
+        [](double x) { return std::sin(x); },
+        0.0, 
+        M_PI,
+        10'000'000
+    );
+
+    std::cout << "Result 1: " << result << " expected around " << 2.0 << std::endl;
+
+    // Интеграл x² от 0 до 1 (ожидаемый результат: ~0.333)
+    auto result2 = integrator.execute(
+        [](double x) { return x*x; },
+        0.0,
+        1.0,
+        10'000'000
+    );
+
+    std::cout << "Result 2: " << result2 << " expected around " << 0.333 << std::endl;
+
+    exit(0);
     try {
         if (argc != 2) {
             cerr << "Need two arguments" << endl;
@@ -38,7 +63,7 @@ int main(int argc, char* argv[]) {
                 cout << "\nShutting down server..." << endl;
                 io_context.stop(); // Остановка цикла обработки событий
             });
-        join_server::Server serv(io_context, port);
+        Server serv(io_context, port);
         io_context.run();
 
     } catch (const invalid_argument& e) {
