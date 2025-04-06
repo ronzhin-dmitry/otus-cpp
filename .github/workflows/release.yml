@@ -45,6 +45,14 @@ jobs:
         run: |
           cmake --build . --target package
 
+      - name: Rename generated DEBs
+        run: |
+          mv mci_server-0.0.${{ github.run_number }}-Linux-lib_mci_server.deb lib_mci_server_0.0.${{ github.run_number }}_amd64.deb
+          mv mci_server-0.0.${{ github.run_number }}-Linux-mci_server.deb mci_server_0.0.${{ github.run_number }}_amd64.deb
+
+      - name: List DEB files (for debug)
+        run: ls -lh *.deb
+
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
