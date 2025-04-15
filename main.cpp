@@ -18,9 +18,10 @@ int main(int argc, char* argv[]) {
     using namespace std;
     using namespace monte_carlo_server;
     using namespace monte_carlo_multithread;
+    using namespace expression_parser;
 
     Integrator integrator;
-    // Интеграл sin(x) от 0 до π (ожидаемый результат: 2.0)
+    // Integral of sin(x) from 0 to π (expected: 2.0)
     auto result = integrator.execute(
         [](double x) { return std::sin(x); },
         0.0, 
@@ -30,7 +31,7 @@ int main(int argc, char* argv[]) {
 
     std::cout << "Result 1: " << result << " expected around " << 2.0 << std::endl;
 
-    // Интеграл x² от 0 до 1 (ожидаемый результат: ~0.333)
+    // Integral of x² from 0 to 1 (expected: ~0.333)
     auto result2 = integrator.execute(
         [](double x) { return x*x; },
         0.0,
@@ -40,7 +41,13 @@ int main(int argc, char* argv[]) {
 
     std::cout << "Result 2: " << result2 << " expected around " << 0.333 << std::endl;
 
-    exit(0);
+    auto ep = ExpressionParser("sin(x)^2 + log(pi, x)");
+    std::cout << "sin(x)^2 + log(pi, x) at x = Pi is " << ep.evaluate(M_PI) << std::endl;
+
+    auto ep2 = ExpressionParser("3*x + x^2 - ln(x) + 15.3");
+    std::cout << "3*x + x^2 - ln(x) + 15.3 at x = 1 is "  << ep2.evaluate(1) << std::endl;
+    std::cout << "3*x + x^2 - ln(x) + 15.3 at x = 2 is "  << ep2.evaluate(2) << std::endl;
+
     try {
         if (argc != 2) {
             cerr << "Need two arguments" << endl;
@@ -61,7 +68,7 @@ int main(int argc, char* argv[]) {
         signals.async_wait(
             [&io_context](const boost::system::error_code&, int) {
                 cout << "\nShutting down server..." << endl;
-                io_context.stop(); // Остановка цикла обработки событий
+                io_context.stop(); 
             });
         Server serv(io_context, port);
         io_context.run();
