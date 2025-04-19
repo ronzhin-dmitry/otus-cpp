@@ -6,6 +6,7 @@
 #include <vector>
 #include <fstream>
 #include <sstream>
+#include <iterator>
 #include <Eigen/Dense>
 /**
  * @brief simple function to return version of the release. (keep for good memories)
