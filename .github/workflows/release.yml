@@ -8,7 +8,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     permissions: write-all
 
     steps:
@@ -62,8 +62,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./lib_join_server_0.0.${{ github.run_number }}_amd64.deb
-          asset_name: lib_join_server_0.0.${{ github.run_number }}_amd64.deb
+          asset_path: ./lib_fashion_mnist_0.0.${{ github.run_number }}_amd64.deb
+          asset_name: lib_fashion_mnist_0.0.${{ github.run_number }}_amd64.deb
           asset_content_type: application/vnd.debian.binary-package
 
       - name: Upload Join Server DEB
@@ -72,6 +72,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./join_server_0.0.${{ github.run_number }}_amd64.deb
-          asset_name: join_server_0.0.${{ github.run_number }}_amd64.deb
+          asset_path: ./fashion_mnist_0.0.${{ github.run_number }}_amd64.deb
+          asset_name: fashion_mnist_0.0.${{ github.run_number }}_amd64.deb
           asset_content_type: application/vnd.debian.binary-package

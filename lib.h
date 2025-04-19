@@ -3,113 +3,89 @@
 #include <cstdlib>
 #include <iostream>
 #include <string>
-#include <memory>
-#include <boost/asio.hpp>
-#include <mutex>
-#include <shared_mutex>
-#include <map>
 #include <vector>
-#include <tuple>
+#include <fstream>
+#include <sstream>
+#include <Eigen/Dense>
 /**
- * @brief simple function to return version of the release.
+ * @brief simple function to return version of the release. (keep for good memories)
  */
 int version();
 
-namespace database
+class Classifier
 {
-    using namespace std;
-    class Database
+public:
+    using features_t = std::vector<float>;
+    using probas_t = std::vector<float>;
+
+    virtual ~Classifier() {}
+
+    virtual size_t num_classes() const = 0;
+
+    virtual size_t predict(const features_t &) const = 0;
+
+    virtual probas_t predict_proba(const features_t &) const = 0;
+};
+
+class MlpClassifier : public Classifier
+{
+public:
+    MlpClassifier(const Eigen::MatrixXf &, const Eigen::MatrixXf &);
+
+    size_t num_classes() const override;
+
+    size_t predict(const features_t &) const override;
+
+    probas_t predict_proba(const features_t &) const override;
+
+private:
+    Eigen::MatrixXf w1_, w2_;
+};
+
+Eigen::MatrixXf read_mat_from_stream(size_t rows, size_t cols, std::istream &stream)
+{
+    Eigen::MatrixXf res(rows, cols);
+    for (size_t i = 0; i < rows; ++i)
     {
-        private:
-            map<int, string> table_A;
-            map<int, string> table_B;
-            shared_mutex mtx;
-            string intersection();
-            string symmetric_difference();
-            string insert_A(int id, string val);
-            string insert_B(int id, string val);
-            string truncate_A();
-            string truncate_B();
-        public:
-            string execute(string command);
-    };
+        for (size_t j = 0; j < cols; ++j)
+        {
+            float val;
+            stream >> val;
+            res(i, j) = val;
+        }
+    }
+    return res;
 }
 
-namespace join_server
+Eigen::MatrixXf read_mat_from_file(size_t rows, size_t cols, const std::string &filepath)
 {
-    using boost::asio::ip::tcp;
-    // Класс для обработки соединения
-    class Session : public std::enable_shared_from_this<Session> {
-    public:
-        Session(tcp::socket socket, database::Database &db_)
-            : socket_(std::move(socket)), db(db_){}
-        
-        void start() {
-            read_message();
-        }
+    std::ifstream stream{filepath};
+    return read_mat_from_stream(rows, cols, stream);
+}
 
-    private:
-        void read_message() {
-            auto self(shared_from_this());
-            boost::asio::async_read_until(socket_, buffer_, '\n',
-                [this, self](boost::system::error_code ec, std::size_t length) {
-                    if (!ec) {
-                        // Извлекаем данные из буфера
-                        std::istream is(&buffer_);
-                        std::string message;
-                        std::getline(is, message);
-                        
-                        // Удаляем возможный \r в конце (для совместимости с клиентами)
-                        if (!message.empty() && message.back() == '\r') {
-                            message.erase(message.end()-1);
-                        }
-                        
-                        // Применяем функцию обработки
-                        std::string response = "";
-                        
-                        if(length != 0)
-                            response = db.execute(message);
-                        else
-                            response = db.execute(message); //TODO: maybe later add different logic
-                        
-                        // Асинхронная отправка ответа
-                        boost::asio::async_write(socket_, 
-                            boost::asio::buffer(response),
-                            [this, self](boost::system::error_code ec, std::size_t) {
-                                if (!ec) {
-                                    // Читаем следующее сообщение
-                                    read_message();
-                                }
-                            });
-                            
-                    }
-                });
-        }
+bool read_features(std::istream &stream, Classifier::features_t &features, char delimiter = ' ')
+{
+    std::string line;
+    std::getline(stream, line);
 
-        tcp::socket socket_;
-        boost::asio::streambuf buffer_;
-        database::Database &db;
-    };
+    features.clear();
+    std::istringstream linestream{line};
+    double value;
+    std::string token;
+    while (std::getline(linestream, token, delimiter))
+    {
+        value = stod(token);
+        features.push_back(value);
+    }
+    return stream.good();
+}
 
-    class Server {
-    public:
-        database::Database db;
-        Server(boost::asio::io_context& io_context, short port)
-            : acceptor_(io_context, tcp::endpoint(tcp::v4(), port)) {
-            accept_connection();
-        }
+std::vector<float> read_vector(std::istream &stream)
+{
+    std::vector<float> result;
 
-    private:
-        void accept_connection() {
-            acceptor_.async_accept(
-                [this](boost::system::error_code ec, tcp::socket socket) {
-                    if (!ec) {
-                        std::make_shared<Session>(std::move(socket), db)->start();
-                    }
-                    accept_connection();
-                });
-        }
-
-        tcp::acceptor acceptor_;
-    };
-} // namespace join_server
+    std::copy(std::istream_iterator<float>(stream),
+              std::istream_iterator<float>(),
+              std::back_inserter(result));
+    return result;
+}

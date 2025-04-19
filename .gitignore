@@ -1,6 +1,7 @@
 /build/*
 /html/*
 /latex/*
+/eigen-*/*
 .vscode*
 /_CPack_Packages*
 /CMakeFiles*
