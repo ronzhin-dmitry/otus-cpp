@@ -4,6 +4,7 @@
 .vscode*
 /_CPack_Packages*
 /CMakeFiles*
+/eigen-*/*
 CPack*
 *.xz
 *.bz2
