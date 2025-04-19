@@ -30,6 +30,7 @@ BOOST_AUTO_TEST_CASE(test_mlp)
     for (;;) {
         size_t y_true;
         test_data >> y_true;
+		if (test_data.peek() == ' ') test_data.ignore();
         if (!read_features(test_data, features)) {
             break;
         }
