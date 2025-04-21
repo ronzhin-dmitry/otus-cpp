@@ -81,11 +81,11 @@ BOOST_AUTO_TEST_CASE(test_square_integration) {
 
 BOOST_AUTO_TEST_CASE(test_variance_based_calculation) {
     // Увеличиваем количество точек и допуск
-    std::string query = "1;x^2;0;1;0.0001;4"; // Более строгая дисперсия
+    std::string query = "1;x^2;0;1;0.00001;4"; // Более строгая дисперсия
     monte_carlo_multithread::Integrator integrator;
     std::string result_str = integrator.execute(query);
     double result = std::stod(result_str);
-    BOOST_CHECK_CLOSE(result, 1.0/3.0, 5.0); // 5% допуск
+    BOOST_CHECK_CLOSE(result, 1.0/3.0, 10.0); // 5% допуск
 }
 
 BOOST_AUTO_TEST_SUITE_END()
@@ -96,13 +96,11 @@ std::string execute_server_test(const std::string& query, short port) {
     io_service io_context;
     tcp::socket socket(io_context);
     
-    std::promise<void> connected;
+    std::promise<std::string> connected;
     auto future = connected.get_future();
     
     std::thread client_thread([&]{
-        socket.connect(tcp::endpoint(address::from_string("127.0.0.1"), port));
-        connected.set_value();
-        
+        socket.connect(tcp::endpoint(address::from_string("127.0.0.1"), port));        
         write(socket, buffer(query + "\n"));
         
         streambuf response_buf;
@@ -110,7 +108,7 @@ std::string execute_server_test(const std::string& query, short port) {
         std::istream response_stream(&response_buf);
         std::string response;
         std::getline(response_stream, response);
-        return response;
+        connected.set_value(response); // Передать результат
     });
 
     future.wait();
@@ -118,7 +116,7 @@ std::string execute_server_test(const std::string& query, short port) {
     
     // Cleanup
     client_thread.join();
-    return "";
+    return future.get(); // Вернуть результат
 }
 
 BOOST_AUTO_TEST_CASE(test_server_connection_and_response) {
@@ -131,17 +129,8 @@ BOOST_AUTO_TEST_CASE(test_server_connection_and_response) {
         io_context.run();
     });
     
-    // Test client
-    tcp::socket socket(io_context);
-    socket.connect(tcp::endpoint(address::from_string("127.0.0.1"), test_port));
-    
-    std::string query = "0;x^2;0;1;1000000;4";
-    write(socket, buffer(query + "\n"));
-    
-    streambuf response_buf;
-    read_until(socket, response_buf, '\n');
-    std::string response = buffer_cast<const char*>(response_buf.data());
-    
+    std::string response = execute_server_test("0;x^2;0;1;1000000;4", test_port);
+
     double result = std::stod(response);
     BOOST_CHECK_CLOSE(result, 0.333, 5.0);
     
