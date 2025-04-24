@@ -20,6 +20,8 @@ int main(int argc, char* argv[]) {
     using namespace monte_carlo_multithread;
     using namespace expression_parser;
 
+    /* 
+    //Examples of usage for simple primitives:
     Integrator integrator;
     // Integral of sin(x) from 0 to π (expected: 2.0)
     auto result = integrator.execute(
@@ -47,7 +49,7 @@ int main(int argc, char* argv[]) {
     auto ep2 = ExpressionParser("3*x + x^2 - ln(x) + 15.3");
     std::cout << "3*x + x^2 - ln(x) + 15.3 at x = 1 is "  << ep2.evaluate(1) << std::endl;
     std::cout << "3*x + x^2 - ln(x) + 15.3 at x = 2 is "  << ep2.evaluate(2) << std::endl;
-
+    */
     try {
         if (argc != 2) {
             cerr << "Need two arguments" << endl;
