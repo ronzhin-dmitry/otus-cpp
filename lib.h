@@ -25,7 +25,7 @@ int version();
 #include <algorithm>
 #include <map>
 
-#define VARIANCE_ESTIMATE_SAMPLE_SIZE 1000
+#define VARIANCE_ESTIMATE_SAMPLE_SIZE 10000
 
 namespace expression_parser{
 
@@ -59,7 +59,7 @@ using namespace std;
                         } else if (token.value == "pi") {
                             evalStack.push(M_PI);
                         } else {
-                            throw invalid_argument("Unknown constant: " + token.value);
+                            throw invalid_argument("Unknown constant: " + token.value + "\n");
                         }
                         break;
                     case Token::OPERATOR:
@@ -73,7 +73,7 @@ using namespace std;
                 }
             }
             if (evalStack.size() != 1) {
-                throw invalid_argument("Invalid expression");
+                throw invalid_argument("Invalid expression\n");
             }
             return evalStack.top();
         }
@@ -116,7 +116,7 @@ using namespace std;
                     } else if (isFunction(name)) {
                         tokens.emplace_back(Token::FUNCTION, name);
                     } else {
-                        throw invalid_argument("Unknown identifier: " + name);
+                        throw invalid_argument("Unknown identifier: " + name + "\n");
                     }
                 } else if (isdigit(expr[i]) || expr[i] == '.') {
                     string num;
@@ -126,7 +126,7 @@ using namespace std;
                     try {
                         stod(num);
                     } catch (...) {
-                        throw invalid_argument("Invalid number: " + num);
+                        throw invalid_argument("Invalid number: " + num + "\n");
                     }
                     tokens.emplace_back(Token::NUMBER, num);
                 } else if (expr[i] == '(') {
@@ -148,7 +148,7 @@ using namespace std;
                     tokens.emplace_back(Token::OPERATOR, isUnary ? "neg" : "-");
                     ++i;
                 } else {
-                    throw invalid_argument("Invalid character: " + string(1, expr[i]));
+                    throw invalid_argument("Invalid character: " + string(1, expr[i]) + "\n");
                 }
             }
             return tokens;
@@ -177,7 +177,7 @@ using namespace std;
                             opStack.pop();
                         }
                         if (opStack.empty()) {
-                            throw invalid_argument("Mismatched parentheses");
+                            throw invalid_argument("Mismatched parentheses\n");
                         }
                         opStack.pop();
                         if (!opStack.empty() && opStack.top().type == Token::FUNCTION) {
@@ -192,7 +192,7 @@ using namespace std;
                             opStack.pop();
                         }
                         if (opStack.empty()) {
-                            throw invalid_argument("Mismatched separator");
+                            throw invalid_argument("Mismatched separator\n");
                         }
                         break;
                     }
@@ -214,7 +214,7 @@ using namespace std;
 
             while (!opStack.empty()) {
                 if (opStack.top().type == Token::LPAREN) {
-                    throw invalid_argument("Mismatched parentheses");
+                    throw invalid_argument("Mismatched parentheses\n");
                 }
                 output.push_back(opStack.top());
                 opStack.pop();
@@ -225,29 +225,29 @@ using namespace std;
 
         void handleOperator(const string& op, stack<double>& evalStack) {
             if (op == "neg") {
-                if (evalStack.empty()) throw invalid_argument("Not enough operands");
+                if (evalStack.empty()) throw invalid_argument("Not enough operands\n");
                 double a = evalStack.top(); evalStack.pop();
                 evalStack.push(-a);
             } else {
-                if (evalStack.size() < 2) throw invalid_argument("Not enough operands");
+                if (evalStack.size() < 2) throw invalid_argument("Not enough operands\n");
                 double b = evalStack.top(); evalStack.pop();
                 double a = evalStack.top(); evalStack.pop();
                 if (op == "+") evalStack.push(a + b);
                 else if (op == "-") evalStack.push(a - b);
                 else if (op == "*") evalStack.push(a * b);
                 else if (op == "/") {
-                    if (b == 0) throw invalid_argument("Division by zero");
+                    if (b == 0) throw invalid_argument("Division by zero\n");
                     evalStack.push(a / b);
                 }
                 else if (op == "^") evalStack.push(pow(a, b));
-                else throw invalid_argument("Unknown operator: " + op);
+                else throw invalid_argument("Unknown operator: " + op + "\n");
             }
         }
 
         void handleFunction(const string& func, stack<double>& evalStack) {
             size_t argCount = getFunctionArgCount(func);
             if (evalStack.size() < argCount) {
-                throw invalid_argument("Not enough arguments for function " + func);
+                throw invalid_argument("Not enough arguments for function " + func + "\n");
             }
             
             vector<double> args;
@@ -260,21 +260,21 @@ using namespace std;
             else if (func == "cos") evalStack.push(cos(args[0]));
             else if (func == "tan") evalStack.push(tan(args[0]));
             else if (func == "ctg") {
-                if (tan(args[0]) == 0) throw invalid_argument("Cotangent of zero");
+                if (tan(args[0]) == 0) throw invalid_argument("Cotangent of zero\n");
                 evalStack.push(1.0 / tan(args[0]));
             }
             else if (func == "atan") evalStack.push(atan(args[0]));
             else if (func == "actg") evalStack.push(M_PI/2 - atan(args[0]));
             else if (func == "exp") evalStack.push(exp(args[0]));
             else if (func == "ln") {
-                if (args[0] <= 0) throw invalid_argument("Log argument must be positive");
+                if (args[0] <= 0) throw invalid_argument("Log argument must be positive\n");
                 evalStack.push(log(args[0]));
             }
             else if (func == "log") {
-                if (args[0] <= 0 || args[1] <= 0) throw invalid_argument("Log arguments must be positive");
+                if (args[0] <= 0 || args[1] <= 0) throw invalid_argument("Log arguments must be positive\n");
                 evalStack.push(log(args[1]) / log(args[0]));
             }
-            else throw invalid_argument("Unknown function: " + func);
+            else throw invalid_argument("Unknown function: " + func + "\n");
         }
 
         bool isFunction(const string& name) {
@@ -290,7 +290,7 @@ using namespace std;
             };
             auto it = argCounts.find(func);
             if (it != argCounts.end()) return it->second;
-            throw invalid_argument("Unknown function: " + func);
+            throw invalid_argument("Unknown function: " + func + "\n");
         }
 
         int getPriority(const string& op) {
@@ -332,6 +332,48 @@ namespace monte_carlo_multithread
             thread_pool tpool_;
             size_t max_nworkers_;
             double calculate_partial_sum(double a, double b, size_t points, function<double(double)> fquery);
+            struct TransformedIntegral {
+                std::function<double(double)> transformed_f;
+                double new_a;
+                double new_b;
+            };
+        
+            TransformedIntegral transform_integral(const std::function<double(double)>& f, double a, double b) {
+                TransformedIntegral result;
+                if (std::isinf(a) || std::isinf(b)) {
+                    if (std::isinf(a) && std::isinf(b)) {
+                        throw std::invalid_argument("Double infinite limits are not supported\n");
+                    } else if (std::isinf(a) && a < 0) {
+                        // integrate from -inf to b
+                        result.new_a = 0.0;
+                        result.new_b = 1.0;
+                        result.transformed_f = [f, b](double t) {
+                            if (t <= 0.0 || t >= 1.0) return 0.0;
+                            double x = b - (1.0 - t)/t;
+                            double jacobian = 1.0 / (t * t);
+                            return f(x) * jacobian;
+                        };
+                    } else if (std::isinf(b) && b > 0) {
+                        // from a to +inf
+                        result.new_a = 0.0;
+                        result.new_b = 1.0;
+                        result.transformed_f = [f, a](double t) {
+                            if (t <= 0.0 || t >= 1.0) return 0.0;
+                            double x = a + (1.0 - t)/t;
+                            double jacobian = 1.0 / (t * t);
+                            return f(x) * jacobian;
+                        };
+                    } else {
+                        throw std::invalid_argument("Unsupported infinite limits\n");
+                    }
+                } else {
+                    result.new_a = a;
+                    result.new_b = b;
+                    result.transformed_f = f;
+                }
+                return result;
+            }
+            std::string execute_impl(const std::function<double(double)>& fquery, double a, double b, size_t num_points, size_t num_workers);
         public:
             explicit Integrator(size_t nworkers = 0) 
                 : tpool_(nworkers ? nworkers : std::thread::hardware_concurrency()),
@@ -355,7 +397,14 @@ namespace monte_carlo_server
             : socket_(std::move(socket)), mci_(mci){}
         
         void start() {
-            read_message();
+                // Убедиться, что сокет открыт
+                if (!socket_.is_open()) return;
+                
+                boost::asio::post(socket_.get_executor(),
+                    [self = shared_from_this()]() {
+                        self->read_message();
+                    }
+                );
         }
 
     private:
@@ -407,15 +456,16 @@ namespace monte_carlo_server
         }
 
     private:
-        void accept_connection() {
-            acceptor_.async_accept(
-                [this](boost::system::error_code ec, tcp::socket socket) {
-                    if (!ec) {
-                        std::make_shared<Session>(std::move(socket), std::ref(mci_))->start();
-                    }
-                    accept_connection();
-                });
-        }
+    void accept_connection() {
+        acceptor_.async_accept(
+            [this](boost::system::error_code ec, tcp::socket socket) {
+                if (!ec) {
+                    std::make_shared<Session>(std::move(socket), mci_)->start();
+                }
+                accept_connection(); // Важно: продолжать принимать соединения
+            }
+        );
+    }
 
         tcp::acceptor acceptor_;
     };

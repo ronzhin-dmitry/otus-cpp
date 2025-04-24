@@ -13,6 +13,9 @@
 #include <thread>
 #include <future>
 
+#include <chrono>
+#include <array>
+using namespace std::chrono_literals;
 using namespace boost::asio;
 using namespace boost::asio::ip;
 
@@ -88,7 +91,39 @@ BOOST_AUTO_TEST_CASE(test_variance_based_calculation) {
     BOOST_CHECK_CLOSE(result, 1.0/3.0, 10.0); // 5% допуск
 }
 
+BOOST_AUTO_TEST_CASE(test_improper_integral_simple) {
+    monte_carlo_multithread::Integrator integrator;
+    // ∫₀^∞ e^(-x) dx = 1
+    auto result_str = integrator.execute("0;exp(-x);0;inf;1000000;4");
+    double result = std::stod(result_str);
+    BOOST_CHECK_CLOSE(result, 1.0, 5.0); // 5% допуск
+}
+
+BOOST_AUTO_TEST_CASE(test_improper_integral_negative_infinite) {
+    monte_carlo_multithread::Integrator integrator;
+    // ∫_-∞^0 e^x dx = 1
+    auto result_str = integrator.execute("0;exp(x);-inf;0;1000000;4");
+    double result = std::stod(result_str);
+    BOOST_CHECK_CLOSE(result, 1.0, 5.0);
+}
+
+BOOST_AUTO_TEST_CASE(test_improper_integral_power_function) {
+    monte_carlo_multithread::Integrator integrator;
+    // ∫₁^∞ 1/x² dx = 1
+    auto result_str = integrator.execute("0;1/(x^2);1;inf;500000;4");
+    double result = std::stod(result_str);
+    BOOST_CHECK_CLOSE(result, 1.0, 8.0);
+}
+
+BOOST_AUTO_TEST_CASE(test_double_infinite_error) {
+    monte_carlo_multithread::Integrator integrator;
+    // Попытка интегрирования с двумя бесконечностями
+    auto result_str = integrator.execute("0;exp(-x^2);-inf;inf;1000000;4");
+    BOOST_TEST(result_str.find("Double infinite limits") != std::string::npos);
+}
+
 BOOST_AUTO_TEST_SUITE_END()
+
 
 BOOST_AUTO_TEST_SUITE(test_server)
 

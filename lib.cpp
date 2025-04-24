@@ -49,7 +49,7 @@ namespace monte_carlo_multithread
     ParseResult parse_input_string(const std::string& input) {
         auto tokens = split_tokens(input);
         if (tokens.size() != 6) {
-            throw std::invalid_argument("Invalid number of tokens. Expected 6, got " + std::to_string(tokens.size()));
+            throw std::invalid_argument("Invalid number of tokens. Expected 6, got " + std::to_string(tokens.size()) + "\n");
         }
 
         ParseResult result;
@@ -60,7 +60,7 @@ namespace monte_carlo_multithread
         } else if (tokens[0] == "1") {
             result.use_num_points = false;
         } else {
-            throw std::invalid_argument("First token must be '0' or '1'");
+            throw std::invalid_argument("First token must be '0' or '1'\n");
         }
 
         // Parse function
@@ -68,38 +68,51 @@ namespace monte_carlo_multithread
 
         // Parse a and b
         try {
-            result.a = std::stod(tokens[2]);
-            result.b = std::stod(tokens[3]);
+            if (tokens[2] == "inf") {
+                result.a = INFINITY;
+            } else if (tokens[2] == "-inf") {
+                result.a = -INFINITY;
+            } else {
+                result.a = std::stod(tokens[2]);
+            }
+
+            if (tokens[3] == "inf") {
+                result.b = INFINITY;
+            } else if (tokens[3] == "-inf") {
+                result.b = -INFINITY;
+            } else {
+                result.b = std::stod(tokens[3]);
+            }
         } catch (const std::exception&) {
-            throw std::invalid_argument("Invalid double value in a/b parameters");
+            throw std::invalid_argument("Invalid double value in a/b parameters\n");
         }
 
         // Parse fifth parameter
         if (!tokens[4].empty() && tokens[4].find('-') != std::string::npos) {
-            throw std::invalid_argument("num points and dispersion cannot be negative");
+            throw std::invalid_argument("num points and dispersion cannot be negative\n");
         }
         if (result.use_num_points) {
             try {
                 result.num_points = std::stoull(tokens[4]);
             } catch (const std::exception&) {
-                throw std::invalid_argument("Invalid num_points value");
+                throw std::invalid_argument("Invalid num_points value\n");
             }
         } else {
             try {
                 result.dispersion = std::stod(tokens[4]);
             } catch (const std::exception&) {
-                throw std::invalid_argument("Invalid dispersion value");
+                throw std::invalid_argument("Invalid dispersion value\n");
             }
         }
 
         // Parse num_workers
         if (!tokens[5].empty() && tokens[5].find('-') != std::string::npos) {
-            throw std::invalid_argument("num workers can't be negative");
+            throw std::invalid_argument("num workers can't be negative\n");
         }
         try {
             result.num_workers = std::stoull(tokens[5]);
         } catch (const std::exception&) {
-            throw std::invalid_argument("Invalid num_workers value");
+            throw std::invalid_argument("Invalid num_workers value\n");
         }
 
         return result;
@@ -124,51 +137,17 @@ namespace monte_carlo_multithread
         return (sum_sq / pilot_samples - mean * mean) * (b - a) * (b - a);
     }
 
-    string Integrator::execute(string query)
+    string Integrator::execute_impl(const std::function<double(double)>& fquery, double a, double b, size_t num_points, size_t num_workers)
     {
-        using namespace expression_parser;
-        //this is the main function to process query logic
-        //the protocol is following:
-        // One of 2 different sets of arguments should be provided:
-        //0   ; f(x)  ; a     ;   b   ;num_points;num_workers
-        //bool; string; double; double;  size_t  ;  size_t
-        //OR:
-        //1   ; f(x)  ; a     ;   b   ;dispersion;num_workers
-        //bool; string; double; double;  double  ;  size_t
-        ////
-        //num workers can be set to 0 to use default
-        string res = "";
-        ParseResult p_res;
-        try {
-            p_res = parse_input_string(query);
-        } catch (const std::exception& e) {
-            return e.what();
-        }
-        auto ep = ExpressionParser(p_res.function);
-        auto f_q = [&ep](double x){return ep.evaluate(x);};
-        if(p_res.use_num_points != true)
-        {
-            p_res.num_points = estimate_variance(f_q, p_res.a, p_res.b) / p_res.dispersion;
-        }
-        try{
-            res = execute(f_q, p_res.a, p_res.b, p_res.num_points, p_res.num_workers);
-        }
-        catch (const std::exception& e) {
-            return e.what();
-        }
-        return res + "\n";
-    }
-
-    string Integrator::execute(function<double(double)> fquery, double a, double b, size_t num_points, size_t num_workers) {
         if (num_workers == 0 || num_workers > max_nworkers_) {
             num_workers = max_nworkers_;
         }
         auto task = std::make_shared<MonteCarloTask>(a, b, num_points, num_workers);
-    
+        
         std::shared_ptr<std::atomic<size_t>> remaining_workers = std::make_shared<std::atomic<size_t>>(num_workers);
         std::shared_ptr<std::mutex> mtx = std::make_shared<std::mutex>();
         std::shared_ptr<std::condition_variable> cv = std::make_shared<std::condition_variable>();
-    
+        
         for (size_t i = 0; i < num_workers; ++i) {
             post(tpool_, [this, task, fquery, remaining_workers, mtx, cv]() {
                 double partial_sum = calculate_partial_sum(task->a, task->b, task->points_per_worker, fquery);
@@ -182,12 +161,68 @@ namespace monte_carlo_multithread
                 }
             });
         }
-    
+        
         std::unique_lock<std::mutex> lock(*mtx);
         cv->wait(lock, [remaining_workers]() { return *remaining_workers == 0; });
-    
+        
         double res = task->result * (b - a) / num_points;
-        return to_string(res);
+        return std::to_string(res) + "\n";
+    }
+
+    string Integrator::execute(string query)
+    {
+        using namespace expression_parser;
+        //this is the main function to process query logic
+        //the protocol is following:
+        // One of 2 different sets of arguments should be provided:
+        //0   ; f(x)  ; a     ;   b   ;num_points;num_workers
+        //bool; string; double; double;  size_t  ;  size_t
+        //OR:
+        //1   ; f(x)  ; a     ;   b   ;dispersion;num_workers
+        //bool; string; double; double;  double  ;  size_t
+        ////
+        //num workers can be set to 0 to use default
+        ParseResult p_res;
+        try {
+            p_res = parse_input_string(query);
+        } catch (const std::exception& e) {
+            return string(e.what()) + "\n";
+        }
+        
+        expression_parser::ExpressionParser ep(p_res.function);
+        auto f_q = [&ep](double x) { return ep.evaluate(x); };
+        
+        TransformedIntegral transformed;
+        try {
+            transformed = transform_integral(f_q, p_res.a, p_res.b);
+        } catch (const std::exception& e) {
+            return string(e.what()) + "\n";
+        }
+        
+        if (!p_res.use_num_points) {
+            try {
+                double variance = estimate_variance(transformed.transformed_f, transformed.new_a, transformed.new_b);
+                p_res.num_points = static_cast<size_t>(variance / p_res.dispersion);
+            } catch (const std::exception& e) {
+                return string(e.what()) + "\n";
+            }
+        }
+        
+        try {
+            return execute_impl(transformed.transformed_f, transformed.new_a, transformed.new_b, p_res.num_points, p_res.num_workers);
+        } catch (const std::exception& e) {
+            return string(e.what()) + "\n";
+        }
+    }
+
+    string Integrator::execute(function<double(double)> fquery, double a, double b, size_t num_points, size_t num_workers) {
+        TransformedIntegral transformed;
+        try {
+            transformed = transform_integral(fquery, a, b);
+        } catch (const std::exception& e) {
+            return string(e.what()) + "\n";
+        }
+        return execute_impl(transformed.transformed_f, transformed.new_a, transformed.new_b, num_points, num_workers);
     }
 
     double Integrator::calculate_partial_sum(double a, double b, size_t points, function<double(double)> fquery) {
