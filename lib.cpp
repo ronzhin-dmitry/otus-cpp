@@ -19,6 +19,7 @@ namespace monte_carlo_multithread
     using namespace std;
     struct ParseResult {
         bool use_num_points;
+        bool just_evaluate_expression;
         std::string function;
         double a;
         double b;
@@ -48,74 +49,88 @@ namespace monte_carlo_multithread
 
     ParseResult parse_input_string(const std::string& input) {
         auto tokens = split_tokens(input);
-        if (tokens.size() != 6) {
-            throw std::invalid_argument("Invalid number of tokens. Expected 6, got " + std::to_string(tokens.size()) + "\n");
-        }
-
         ParseResult result;
-
-        // Parse first token (0/1)
-        if (tokens[0] == "0") {
-            result.use_num_points = true;
-        } else if (tokens[0] == "1") {
-            result.use_num_points = false;
-        } else {
-            throw std::invalid_argument("First token must be '0' or '1'\n");
-        }
-
-        // Parse function
-        result.function = tokens[1];
-
-        // Parse a and b
-        try {
-            if (tokens[2] == "inf") {
-                result.a = INFINITY;
-            } else if (tokens[2] == "-inf") {
-                result.a = -INFINITY;
-            } else {
-                result.a = std::stod(tokens[2]);
-            }
-
-            if (tokens[3] == "inf") {
-                result.b = INFINITY;
-            } else if (tokens[3] == "-inf") {
-                result.b = -INFINITY;
-            } else {
-                result.b = std::stod(tokens[3]);
-            }
-        } catch (const std::exception&) {
-            throw std::invalid_argument("Invalid double value in a/b parameters\n");
-        }
-
-        // Parse fifth parameter
-        if (!tokens[4].empty() && tokens[4].find('-') != std::string::npos) {
-            throw std::invalid_argument("num points and dispersion cannot be negative\n");
-        }
-        if (result.use_num_points) {
+        if(tokens.size() == 2)
+        {
+            //Simple-calculator mode. Inputs are expression and variable
+            result.just_evaluate_expression = true;
+            result.function = tokens[0];
+            // Parse a and b
             try {
-                result.num_points = std::stoull(tokens[4]);
-            } catch (const std::exception&) {
-                throw std::invalid_argument("Invalid num_points value\n");
+                    result.a = std::stod(tokens[1]);
+                } catch (const std::exception&) {
+                    throw std::invalid_argument("Simple calculator mode - invalid double for evaluation of function\n");
+                }
+        }
+        else
+        {
+            if (tokens.size() != 6) {
+                throw std::invalid_argument("Invalid number of tokens. Expected 6 or 2, got " + std::to_string(tokens.size()) + "\n");
             }
-        } else {
+
+            // Parse first token (0/1)
+            if (tokens[0] == "0") {
+                result.use_num_points = true;
+            } else if (tokens[0] == "1") {
+                result.use_num_points = false;
+            } else {
+                throw std::invalid_argument("First token must be '0' or '1'\n");
+            }
+            result.just_evaluate_expression = false;
+            // Parse function
+            result.function = tokens[1];
+
+            // Parse a and b
             try {
-                result.dispersion = std::stod(tokens[4]);
+                if (tokens[2] == "inf") {
+                    result.a = INFINITY;
+                } else if (tokens[2] == "-inf") {
+                    result.a = -INFINITY;
+                } else {
+                    result.a = std::stod(tokens[2]);
+                }
+
+                if (tokens[3] == "inf") {
+                    result.b = INFINITY;
+                } else if (tokens[3] == "-inf") {
+                    result.b = -INFINITY;
+                } else {
+                    result.b = std::stod(tokens[3]);
+                }
             } catch (const std::exception&) {
-                throw std::invalid_argument("Invalid dispersion value\n");
+                throw std::invalid_argument("Invalid double value in a/b parameters\n");
+            }
+
+            // Parse fifth parameter
+            if (!tokens[4].empty() && tokens[4].find('-') != std::string::npos) {
+                throw std::invalid_argument("num points and dispersion cannot be negative\n");
+            }
+            if (result.use_num_points) {
+                try {
+                    result.num_points = std::stoull(tokens[4]);
+                } catch (const std::exception&) {
+                    throw std::invalid_argument("Invalid num_points value\n");
+                }
+            } else {
+                try {
+                    result.dispersion = std::stod(tokens[4]);
+                } catch (const std::exception&) {
+                    throw std::invalid_argument("Invalid dispersion value\n");
+                }
+            }
+
+            // Parse num_workers
+            if (!tokens[5].empty() && tokens[5].find('-') != std::string::npos) {
+                throw std::invalid_argument("num workers can't be negative\n");
+            }
+            try {
+                result.num_workers = std::stoull(tokens[5]);
+            } catch (const std::exception&) {
+                throw std::invalid_argument("Invalid num_workers value\n");
             }
         }
-
-        // Parse num_workers
-        if (!tokens[5].empty() && tokens[5].find('-') != std::string::npos) {
-            throw std::invalid_argument("num workers can't be negative\n");
-        }
-        try {
-            result.num_workers = std::stoull(tokens[5]);
-        } catch (const std::exception&) {
-            throw std::invalid_argument("Invalid num_workers value\n");
-        }
-
         return result;
+
     }
 
     double estimate_variance(function<double(double)> fquery, double a, double b, size_t pilot_samples = VARIANCE_ESTIMATE_SAMPLE_SIZE) {
@@ -192,6 +207,10 @@ namespace monte_carlo_multithread
         expression_parser::ExpressionParser ep(p_res.function);
         auto f_q = [&ep](double x) { return ep.evaluate(x); };
         
+        if(p_res.just_evaluate_expression)
+        {
+            return std::to_string(f_q(p_res.a)) + "\n"; // simple calulator mode
+        }
         TransformedIntegral transformed;
         try {
             transformed = transform_integral(f_q, p_res.a, p_res.b);
