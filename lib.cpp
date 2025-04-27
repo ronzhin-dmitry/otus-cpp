@@ -452,36 +452,22 @@ namespace monte_carlo_multithread
         ParseResult p_res;
         try {
             p_res = parse_input_string(query);
-        } catch (const std::exception& e) {
-            return string(e.what()) + "\n";
-        }
-        
-        expression_parser::ExpressionParser ep(p_res.function);
-        auto f_q = [&ep](double x) { return ep.evaluate(x); };
-        
-        if(p_res.just_evaluate_expression)
-        {
-            return std::to_string(f_q(p_res.a)) + "\n"; // simple calulator mode
-        }
-        TransformedIntegral transformed;
-        try {
-            transformed = transform_integral(f_q, p_res.a, p_res.b);
-        } catch (const std::exception& e) {
-            return string(e.what()) + "\n";
-        }
-        
-        if (!p_res.use_num_points) {
-            try {
-                double variance = estimate_variance(transformed.transformed_f, transformed.new_a, transformed.new_b);
-                p_res.num_points = static_cast<size_t>(variance / p_res.dispersion);
-            } catch (const std::exception& e) {
-                return string(e.what()) + "\n";
+            expression_parser::ExpressionParser ep(p_res.function);
+            auto f_q = [&ep](double x) { return ep.evaluate(x); };
+            if(p_res.just_evaluate_expression)
+            {
+                return std::to_string(f_q(p_res.a)) + "\n"; // simple calulator mode
             }
-        }
-        
-        try {
+            TransformedIntegral transformed;
+            transformed = transform_integral(f_q, p_res.a, p_res.b);
+            
+            if (!p_res.use_num_points) {
+                    double variance = estimate_variance(transformed.transformed_f, transformed.new_a, transformed.new_b);
+                    p_res.num_points = static_cast<size_t>(variance / p_res.dispersion);
+            }  
             return execute_impl(transformed.transformed_f, transformed.new_a, transformed.new_b, p_res.num_points, p_res.num_workers);
-        } catch (const std::exception& e) {
+        }
+        catch (const std::exception& e) {
             return string(e.what()) + "\n";
         }
     }
