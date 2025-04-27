@@ -4,13 +4,14 @@
 #include "lib.h"
 
 /**
- * @brief Entry point
+ * @brief Entry point of the Monte-Carlo Integration project
  *
- * Execution of the program
- * starts here.
+ * Execution of the program starts here. 
+ * Main file shows how to start the MCI server on specified port (port specification via argv).
+ * Under commented sections one can fing examples of execution of syntax-parser module and intgrator module.
  *
  * @param argc Number of arguments
- * @param argv List of arguments
+ * @param argv List of arguments (expecting port number as a single CLI argument)
  *
  * @return Program exit status
  */

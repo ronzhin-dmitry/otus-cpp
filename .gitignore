@@ -25,3 +25,4 @@ install_manifest.txt
 doxygen/*
 *.bak
 *.log
+*.pptx
