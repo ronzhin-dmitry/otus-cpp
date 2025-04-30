@@ -500,12 +500,13 @@ namespace monte_carlo_multithread
 
     Integrator::TransformedIntegral Integrator::transform_integral(const std::function<double(double)>& f, double a, double b) {
         TransformedIntegral result;
+        double eps = 1e-12; //to avoid too small numbers in denominator
         if (std::isinf(a) || std::isinf(b)) {
             if (std::isinf(a) && std::isinf(b)) {
                 throw std::invalid_argument("Double infinite limits are not supported\n");
             } else if (std::isinf(a) && a < 0) {
                 // integrate from -inf to b
-                result.new_a = 0.0;
+                result.new_a = 0.0 + eps; //to evade division by zero 
                 result.new_b = 1.0;
                 result.transformed_f = [f, b](double t) {
                     if (t <= 0.0 || t >= 1.0) return 0.0;
@@ -515,7 +516,7 @@ namespace monte_carlo_multithread
                 };
             } else if (std::isinf(b) && b > 0) {
                 // from a to +inf
-                result.new_a = 0.0;
+                result.new_a = 0.0 + eps; //to evade division by zero
                 result.new_b = 1.0;
                 result.transformed_f = [f, a](double t) {
                     if (t <= 0.0 || t >= 1.0) return 0.0;
